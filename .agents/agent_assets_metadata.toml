@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "YT5kGLgnAsePYcF9iC19a"
+uri = "file://Hess-Project-Overview.md"
+type = "text"
+title = "Hess — Full Project Overview"
