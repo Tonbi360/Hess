@@ -119,6 +119,7 @@ export default function GamePage() {
             capturedByWhite={gameState.capturedByWhite}
             capturedByBlack={gameState.capturedByBlack}
             isKingSwapMode={ui.isKingSwapMode}
+            selectedPiece={ui.selectedSquare !== null ? gameState.board[ui.selectedSquare] : null}
             onInitiateKingSwap={actions.initiateKingSwap}
             onCancelKingSwap={actions.cancelKingSwap}
             onReadySetup={handleReadySetup}
