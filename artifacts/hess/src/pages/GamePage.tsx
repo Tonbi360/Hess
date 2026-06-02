@@ -82,7 +82,7 @@ interface GamePageProps {
 export default function GamePage({ state, actions, onLeave }: GamePageProps) {
   const {
     gameState, myColor, players, roomId, isKingSwapMode, selectedSquare,
-    legalMoveSquares, validSwapTargets, validSacrificeTargets, attackedKingSquare, status,
+    legalMoveSquares, blockedRookSquares, validSwapTargets, validSacrificeTargets, attackedKingSquare, status,
   } = state;
 
   if (!gameState || !myColor) return null;
@@ -163,6 +163,7 @@ export default function GamePage({ state, actions, onLeave }: GamePageProps) {
                   board={gameState.board}
                   selectedSquare={selectedSquare}
                   legalMoveSquares={legalMoveSquares}
+                  blockedRookSquares={blockedRookSquares}
                   validSwapTargets={validSwapTargets}
                   validSacrificeTargets={validSacrificeTargets}
                   attackedKingSquare={attackedKingSquare}

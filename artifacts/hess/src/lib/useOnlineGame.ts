@@ -3,6 +3,7 @@ import { io, Socket } from 'socket.io-client';
 import type { GameState, Color } from './types';
 import {
   getLegalMoves,
+  getRookPotentialTargets,
   getValidSwapTargets,
   getValidSacrificeTargets,
   findKing,
@@ -57,6 +58,7 @@ export interface OnlineGameState {
   errorMsg: string | null;
   selectedSquare: number | null;
   legalMoveSquares: number[];
+  blockedRookSquares: number[];
   validSwapTargets: number[];
   validSacrificeTargets: number[];
   isKingSwapMode: boolean;
@@ -324,6 +326,14 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
   const legalMoveSquares: number[] = selectedSquare !== null && gameState && !isKingSwapMode
     ? getLegalMoves(gameState, selectedSquare) : [];
 
+  // For a selected Rook: show its ±4/±6 targets that are blocked by friendly pieces
+  const blockedRookSquares: number[] = (() => {
+    if (selectedSquare === null || !gameState || isKingSwapMode) return [];
+    const piece = gameState.board[selectedSquare];
+    if (!piece || piece.type !== 'ROOK') return [];
+    return getRookPotentialTargets(selectedSquare).filter(sq => !legalMoveSquares.includes(sq));
+  })();
+
   const validSwapTargets: number[] = isKingSwapMode && gameState && myColor
     ? getValidSwapTargets(gameState, myColor) : [];
 
@@ -340,7 +350,7 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
   return {
     state: {
       gameState, myColor, roomId, players, status, errorMsg,
-      selectedSquare, legalMoveSquares, validSwapTargets,
+      selectedSquare, legalMoveSquares, blockedRookSquares, validSwapTargets,
       validSacrificeTargets, isKingSwapMode, attackedKingSquare,
       savedSession,
     },

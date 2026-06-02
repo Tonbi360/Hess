@@ -114,6 +114,11 @@ function getRookTargets(board: Board, sq: number, color: Color): number[] {
   return moves;
 }
 
+/** All on-board squares the Rook points at, regardless of what occupies them. */
+export function getRookPotentialTargets(sq: number): number[] {
+  return [4, -4, 6, -6].map(o => sq + o).filter(t => t >= 0 && t <= 63);
+}
+
 function getBishopStairMoves(board: Board, sq: number, color: Color): number[] {
   const moves: number[] = [];
   // 4 staircase directions: [rowDelta, colDelta]

@@ -6,6 +6,7 @@ interface HessBoardProps {
   board: Board;
   selectedSquare: number | null;
   legalMoveSquares: number[];
+  blockedRookSquares?: number[];
   validSwapTargets: number[];
   validSacrificeTargets: number[];
   attackedKingSquare: number | null;
@@ -22,6 +23,7 @@ export function HessBoard({
   board,
   selectedSquare,
   legalMoveSquares,
+  blockedRookSquares = [],
   validSwapTargets,
   validSacrificeTargets,
   attackedKingSquare,
@@ -70,6 +72,7 @@ export function HessBoard({
 
           const isSelected = activeSelected === sq;
           const isLegalMove = legalMoveSquares.includes(sq);
+          const isBlockedRook = blockedRookSquares.includes(sq);
           const isValidSwap = validSwapTargets.includes(sq);
           const isValidSacrifice = validSacrificeTargets.includes(sq);
           const isAttackedKing = attackedKingSquare === sq;
@@ -123,6 +126,16 @@ export function HessBoard({
                   ) : (
                     <div className="w-[28%] h-[28%] bg-primary/50 rounded-full" />
                   )}
+                </div>
+              )}
+
+              {/* Blocked Rook target — shows where the missile aims but can't land */}
+              {isBlockedRook && !isLegalMove && (
+                <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                  <div className="w-[28%] h-[28%] rounded-full border-2 border-white/20 bg-white/10 flex items-center justify-center">
+                    <div className="w-[40%] h-[2px] bg-white/30 rotate-45 absolute" />
+                    <div className="w-[40%] h-[2px] bg-white/30 -rotate-45 absolute" />
+                  </div>
                 </div>
               )}
 
