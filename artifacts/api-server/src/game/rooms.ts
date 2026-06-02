@@ -6,6 +6,7 @@ import {
   swapSetupSquares,
   confirmSetup,
   findKing,
+  getLegalMoves,
   getValidSwapTargets,
   getValidSacrificeTargets,
 } from '@workspace/hess-engine';
@@ -176,6 +177,8 @@ export function handleMakeMove(room: Room, color: Color, from: number, to: numbe
   if (gameState.currentTurn !== color) return false;
   const piece = gameState.board[from];
   if (!piece || piece.color !== color) return false;
+  const legal = getLegalMoves(gameState, from);
+  if (!legal.includes(to)) return false;
   const result = applyMove(gameState, from, to);
   room.gameState = result.state;
   return true;
