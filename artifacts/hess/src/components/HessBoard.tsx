@@ -1,5 +1,4 @@
 import { Board, Color, GamePhase } from "@/lib/types";
-import { getRow } from "@/lib/engine";
 import { PieceIcon } from "./PieceIcon";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +15,7 @@ interface HessBoardProps {
   currentTurn: Color;
   setupSelectedSquare?: number | null;
   onSetupSquareClick?: (sq: number) => void;
+  flipped?: boolean;
 }
 
 export function HessBoard({
@@ -30,9 +30,10 @@ export function HessBoard({
   phase,
   currentTurn,
   setupSelectedSquare,
-  onSetupSquareClick
+  onSetupSquareClick,
+  flipped = false,
 }: HessBoardProps) {
-  
+
   const handleSquareClick = (sq: number) => {
     if (phase.startsWith('SETUP_')) {
       if (onSetupSquareClick) onSetupSquareClick(sq);
@@ -44,29 +45,48 @@ export function HessBoard({
   const isSetup = phase.startsWith('SETUP_');
   const activeSelected = isSetup ? setupSelectedSquare : selectedSquare;
 
+  // Build display order: when flipped, square at display index i = 63 - 8*(i/8|0) - (i%8)
+  // This puts White's back rank (row 7) at top and Black's back rank (row 0) at bottom
+  const displaySquares = Array.from({ length: 64 }, (_, i) =>
+    flipped ? 63 - Math.floor(i / 8) * 8 - (i % 8) : i
+  );
+
   return (
-    <div className="relative w-full max-w-[80vh] aspect-square mx-auto border-4 border-border rounded-sm shadow-2xl bg-muted overflow-hidden">
-      
+    <div className="relative w-full aspect-square border-2 border-border/60 rounded-sm shadow-2xl bg-muted overflow-hidden">
+
       {/* Midfield Divider */}
-      <div className="absolute top-1/2 left-0 w-full h-1 bg-primary/40 z-10 -translate-y-1/2 pointer-events-none" />
+      <div className="absolute top-1/2 left-0 w-full h-[2px] bg-primary/50 z-10 -translate-y-1/2 pointer-events-none" />
 
       <div className="grid grid-cols-8 grid-rows-8 w-full h-full">
-        {board.map((piece, sq) => {
-          const row = Math.floor(sq / 8);
-          const col = sq % 8;
+        {displaySquares.map((sq, displayIdx) => {
+          const row = Math.floor(sq / 8);   // actual row: 0 = Black back rank, 7 = White back rank
+          const col = sq % 8;               // actual col: 0 = a-file, 7 = h-file
+
+          // Display position in the rendered grid
+          const displayRow = Math.floor(displayIdx / 8);
+          const displayCol = displayIdx % 8;
+
           const isDarkSquare = (row + col) % 2 === 1;
-          
+
           const isSelected = activeSelected === sq;
           const isLegalMove = legalMoveSquares.includes(sq);
           const isValidSwap = validSwapTargets.includes(sq);
           const isValidSacrifice = validSacrificeTargets.includes(sq);
           const isAttackedKing = attackedKingSquare === sq;
           const isLastMove = lastMove?.from === sq || lastMove?.to === sq;
+          const piece = board[sq];
 
-          // In setup phase, only allow clicking on own back row
           let isInteractive = true;
           if (phase === 'SETUP_WHITE' && row !== 7) isInteractive = false;
           if (phase === 'SETUP_BLACK' && row !== 0) isInteractive = false;
+
+          // Coordinate labels
+          const showRank = displayCol === 0;
+          const showFile = displayRow === 7;
+          const rankLabel = flipped ? String(row + 1) : String(8 - row);
+          const fileLabel = flipped
+            ? String.fromCharCode(97 + (7 - col))
+            : String.fromCharCode(97 + col);
 
           return (
             <div
@@ -74,8 +94,8 @@ export function HessBoard({
               data-testid={`square-${sq}`}
               onClick={() => isInteractive && handleSquareClick(sq)}
               className={cn(
-                "relative flex items-center justify-center w-full h-full cursor-pointer transition-colors duration-200",
-                isDarkSquare ? "bg-[#2c2f33]" : "bg-[#43484f]", // charcoal/slate board colors
+                "relative flex items-center justify-center w-full h-full cursor-pointer transition-colors duration-150",
+                isDarkSquare ? "bg-[#2c2f33]" : "bg-[#43484f]",
                 isLastMove && "after:absolute after:inset-0 after:bg-primary/20",
                 isSelected && "ring-inset ring-4 ring-primary bg-primary/20 z-20",
                 isValidSwap && "ring-inset ring-4 ring-amber-500 bg-amber-500/20 z-20",
@@ -84,15 +104,14 @@ export function HessBoard({
                 !isInteractive && "cursor-not-allowed",
               )}
             >
-              {/* Coordinates for edge squares */}
-              {col === 0 && (
-                <span className="absolute top-1 left-1 text-[10px] text-foreground/30 font-mono pointer-events-none">
-                  {8 - row}
+              {showRank && (
+                <span className="absolute top-0.5 left-1 text-[9px] text-foreground/30 font-mono pointer-events-none leading-none select-none">
+                  {rankLabel}
                 </span>
               )}
-              {row === 7 && (
-                <span className="absolute bottom-1 right-1 text-[10px] text-foreground/30 font-mono pointer-events-none uppercase">
-                  {String.fromCharCode(97 + col)}
+              {showFile && (
+                <span className="absolute bottom-0.5 right-1 text-[9px] text-foreground/30 font-mono pointer-events-none leading-none select-none uppercase">
+                  {fileLabel}
                 </span>
               )}
 
@@ -100,16 +119,16 @@ export function HessBoard({
               {isLegalMove && (
                 <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                   {piece ? (
-                    <div className="w-full h-full border-4 border-destructive/60 rounded-full scale-90" /> // Capture indicator
+                    <div className="w-full h-full border-[3px] border-destructive/70 rounded-full scale-90" />
                   ) : (
-                    <div className="w-1/4 h-1/4 bg-primary/40 rounded-full" /> // Move indicator
+                    <div className="w-[28%] h-[28%] bg-primary/50 rounded-full" />
                   )}
                 </div>
               )}
 
               {/* Piece */}
               {piece && (
-                <div className="relative z-30 w-3/4 h-3/4 flex items-center justify-center">
+                <div className="relative z-30 w-[78%] h-[78%] flex items-center justify-center">
                   <PieceIcon piece={piece} size={48} />
                 </div>
               )}

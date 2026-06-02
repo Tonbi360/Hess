@@ -10,7 +10,7 @@ const queryClient = new QueryClient();
 function HessApp() {
   const { state, actions } = useOnlineGame();
 
-  const inGame = state.status === 'ready' && state.gameState !== null;
+  const inGame = (state.status === 'ready' || state.status === 'opponent_away' || state.status === 'disconnected') && state.gameState !== null;
 
   if (inGame) {
     return <GamePage state={state} actions={actions} onLeave={actions.disconnect} />;
