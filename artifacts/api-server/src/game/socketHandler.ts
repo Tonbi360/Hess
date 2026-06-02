@@ -3,16 +3,17 @@ import { logger } from '../lib/logger.js';
 import {
   createRoom,
   joinRoom,
+  reconnectPlayer,
   getRoom,
-  getColorInRoom,
   getRoomBySocket,
-  removePlayerFromRoom,
+  markPlayerDisconnected,
   handleSetupSwap,
   handleConfirmSetup,
   handleMakeMove,
   handleKingSwap,
   handleSacrifice,
 } from './rooms.js';
+import type { Color } from '@workspace/hess-engine';
 
 function getRoomState(roomId: string) {
   const room = getRoom(roomId);
@@ -32,9 +33,9 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
   socket.on('create_room', ({ playerName }: { playerName: string }) => {
     try {
       const name = (playerName || 'Anonymous').slice(0, 20);
-      const room = createRoom(socket.id, name);
+      const { room, token } = createRoom(socket.id, name);
       socket.join(room.id);
-      socket.emit('room_created', { roomId: room.id, color: 'WHITE' });
+      socket.emit('room_created', { roomId: room.id, color: 'WHITE', playerToken: token });
       logger.info({ roomId: room.id, playerName: name }, 'Room created');
     } catch (err) {
       logger.error({ err }, 'create_room error');
@@ -46,22 +47,44 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     try {
       const name = (playerName || 'Anonymous').slice(0, 20);
       const result = joinRoom(roomId, socket.id, name);
-      if ('error' in result) {
-        socket.emit('error', { message: result.error });
-        return;
-      }
-      const { room } = result;
+      if ('error' in result) { socket.emit('error', { message: result.error }); return; }
+      const { room, token } = result;
       socket.join(room.id);
       const state = getRoomState(room.id)!;
       io.to(room.id).emit('room_ready', {
         roomId: room.id,
         gameState: state.gameState,
         players: state.players,
+        playerTokens: {
+          WHITE: room.players.WHITE?.token,
+          BLACK: room.players.BLACK?.token,
+        },
       });
       logger.info({ roomId: room.id, playerName: name }, 'Player joined room');
     } catch (err) {
       logger.error({ err }, 'join_room error');
       socket.emit('error', { message: 'Failed to join room.' });
+    }
+  });
+
+  socket.on('reconnect_room', ({ roomId, playerToken }: { roomId: string; playerToken: string }) => {
+    try {
+      const result = reconnectPlayer(roomId, playerToken, socket.id);
+      if ('error' in result) { socket.emit('error', { message: result.error }); return; }
+      const { room, color } = result;
+      socket.join(room.id);
+      const state = getRoomState(room.id)!;
+      socket.emit('reconnected', {
+        roomId: room.id,
+        color,
+        gameState: state.gameState,
+        players: state.players,
+      });
+      socket.to(room.id).emit('opponent_reconnected', { color });
+      logger.info({ roomId: room.id, color }, 'Player reconnected');
+    } catch (err) {
+      logger.error({ err }, 'reconnect_room error');
+      socket.emit('error', { message: 'Failed to reconnect.' });
     }
   });
 
@@ -112,9 +135,16 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
 
   socket.on('disconnect', () => {
     logger.info({ socketId: socket.id }, 'Client disconnected');
-    const removed = removePlayerFromRoom(socket.id);
+    const removed = markPlayerDisconnected(socket.id, (roomId: string, color: Color) => {
+      // Grace period expired — permanently remove
+      io.to(roomId).emit('opponent_left', { color });
+      logger.info({ roomId, color }, 'Player grace period expired, removed from room');
+    });
     if (removed) {
-      io.to(removed.roomId).emit('opponent_disconnected', { color: removed.color });
+      io.to(removed.roomId).emit('opponent_disconnected', {
+        color: removed.color,
+        gracePeriodSeconds: 120,
+      });
     }
   });
 }

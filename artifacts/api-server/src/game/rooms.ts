@@ -10,10 +10,13 @@ import {
   getValidSacrificeTargets,
 } from '@workspace/hess-engine';
 import type { GameState, Color } from '@workspace/hess-engine';
+import { randomUUID } from 'node:crypto';
 
 export interface Player {
   socketId: string;
   name: string;
+  token: string;
+  disconnectedAt?: number;
 }
 
 export interface Room {
@@ -24,6 +27,13 @@ export interface Room {
 }
 
 const rooms = new Map<string, Room>();
+const disconnectTimers = new Map<string, ReturnType<typeof setTimeout>>();
+
+function timerKey(roomId: string, color: Color) {
+  return `${roomId}_${color}`;
+}
+
+const RECONNECT_GRACE_MS = 2 * 60 * 1000; // 2 minutes
 
 function generateRoomId(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -32,26 +42,54 @@ function generateRoomId(): string {
   return id;
 }
 
-export function createRoom(socketId: string, playerName: string): Room {
+export function createRoom(socketId: string, playerName: string): { room: Room; token: string } {
   let id = generateRoomId();
   while (rooms.has(id)) id = generateRoomId();
+  const token = randomUUID();
   const room: Room = {
     id,
     gameState: createInitialState(),
-    players: { WHITE: { socketId, name: playerName } },
+    players: { WHITE: { socketId, name: playerName, token } },
     createdAt: Date.now(),
   };
   rooms.set(id, room);
-  return room;
+  return { room, token };
 }
 
-export function joinRoom(roomId: string, socketId: string, playerName: string): { room: Room; color: Color } | { error: string } {
+export function joinRoom(
+  roomId: string,
+  socketId: string,
+  playerName: string,
+): { room: Room; color: Color; token: string } | { error: string } {
   const room = rooms.get(roomId.toUpperCase());
   if (!room) return { error: 'Room not found.' };
-  if (room.players.BLACK) return { error: 'Room is already full.' };
+  if (room.players.BLACK && !room.players.BLACK.disconnectedAt) return { error: 'Room is already full.' };
   if (room.players.WHITE?.socketId === socketId) return { error: 'You are already in this room.' };
-  room.players.BLACK = { socketId, name: playerName };
-  return { room, color: 'BLACK' };
+  const token = randomUUID();
+  room.players.BLACK = { socketId, name: playerName, token };
+  return { room, color: 'BLACK', token };
+}
+
+export function reconnectPlayer(
+  roomId: string,
+  playerToken: string,
+  newSocketId: string,
+): { room: Room; color: Color } | { error: string } {
+  const room = rooms.get(roomId.toUpperCase());
+  if (!room) return { error: 'Room no longer exists. The game may have expired.' };
+
+  for (const color of ['WHITE', 'BLACK'] as Color[]) {
+    const player = room.players[color];
+    if (player && player.token === playerToken) {
+      const key = timerKey(room.id, color);
+      const timer = disconnectTimers.get(key);
+      if (timer) { clearTimeout(timer); disconnectTimers.delete(key); }
+      player.socketId = newSocketId;
+      delete player.disconnectedAt;
+      return { room, color };
+    }
+  }
+  return { error: 'Session not recognised. The game may have expired.' };
 }
 
 export function getRoom(roomId: string): Room | undefined {
@@ -60,26 +98,52 @@ export function getRoom(roomId: string): Room | undefined {
 
 export function getRoomBySocket(socketId: string): { room: Room; color: Color } | null {
   for (const room of rooms.values()) {
-    for (const [color, player] of Object.entries(room.players) as [Color, Player][]) {
-      if (player.socketId === socketId) return { room, color };
+    for (const color of ['WHITE', 'BLACK'] as Color[]) {
+      const player = room.players[color];
+      if (player && player.socketId === socketId) return { room, color };
     }
   }
   return null;
 }
 
 export function getColorInRoom(room: Room, socketId: string): Color | null {
-  for (const [color, player] of Object.entries(room.players) as [Color, Player][]) {
-    if (player.socketId === socketId) return color;
+  for (const color of ['WHITE', 'BLACK'] as Color[]) {
+    const player = room.players[color];
+    if (player && player.socketId === socketId) return color;
   }
   return null;
 }
 
-export function removePlayerFromRoom(socketId: string): { roomId: string; color: Color } | null {
+/**
+ * Mark a player as disconnected and start a grace-period timer.
+ * Returns room info if found, plus a schedule function to call after
+ * setting up the timer callback.
+ */
+export function markPlayerDisconnected(
+  socketId: string,
+  onExpire: (roomId: string, color: Color) => void,
+): { roomId: string; color: Color } | null {
   for (const [roomId, room] of rooms.entries()) {
-    for (const [color, player] of Object.entries(room.players) as [Color, Player][]) {
-      if (player.socketId === socketId) {
-        delete room.players[color];
-        if (!room.players.WHITE && !room.players.BLACK) rooms.delete(roomId);
+    for (const color of ['WHITE', 'BLACK'] as Color[]) {
+      const player = room.players[color];
+      if (player && player.socketId === socketId) {
+        player.disconnectedAt = Date.now();
+        const key = timerKey(roomId, color);
+        const existing = disconnectTimers.get(key);
+        if (existing) clearTimeout(existing);
+        const timer = setTimeout(() => {
+          disconnectTimers.delete(key);
+          const r = rooms.get(roomId);
+          if (r) {
+            const p = r.players[color];
+            if (p && p.disconnectedAt) {
+              delete r.players[color];
+              if (!r.players.WHITE && !r.players.BLACK) rooms.delete(roomId);
+            }
+          }
+          onExpire(roomId, color);
+        }, RECONNECT_GRACE_MS);
+        disconnectTimers.set(key, timer);
         return { roomId, color };
       }
     }
@@ -91,8 +155,7 @@ export function handleSetupSwap(room: Room, color: Color, sq1: number, sq2: numb
   const { phase } = room.gameState;
   if (phase === 'SETUP_WHITE' && color !== 'WHITE') return false;
   if (phase === 'SETUP_BLACK' && color !== 'BLACK') return false;
-  const row1 = Math.floor(sq1 / 8);
-  const row2 = Math.floor(sq2 / 8);
+  const row1 = Math.floor(sq1 / 8); const row2 = Math.floor(sq2 / 8);
   if (color === 'WHITE' && (row1 !== 7 || row2 !== 7)) return false;
   if (color === 'BLACK' && (row1 !== 0 || row2 !== 0)) return false;
   room.gameState = swapSetupSquares(room.gameState, sq1, sq2);
