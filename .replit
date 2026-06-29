@@ -30,3 +30,8 @@ externalPort = 8081
 [[ports]]
 localPort = 19115
 externalPort = 3000
+
+[userenv]
+
+[userenv.shared]
+AI_ADMIN_PASSWORD = "@1TRUElove"
