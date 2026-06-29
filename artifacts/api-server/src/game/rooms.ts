@@ -78,13 +78,9 @@ export function createAiRoom(
   let id = generateRoomId();
   while (rooms.has(id)) id = generateRoomId();
   const token = randomUUID();
-  // Auto-confirm both setup phases so game starts immediately
-  let gs = createInitialState();
-  gs = confirmSetup(gs); // WHITE confirms
-  gs = confirmSetup(gs); // BLACK confirms
   const room: Room = {
     id,
-    gameState: gs,
+    gameState: createInitialState(),
     players: {
       WHITE: { socketId, name: playerName, token },
       BLACK: { socketId: AI_PLAYER_ID, name: 'Hess', token: '' },

@@ -146,6 +146,13 @@ export function registerSocketHandlers(io: Server, socket: Socket) {
     const ok = handleConfirmSetup(room, color);
     if (!ok) { socket.emit('error', { message: 'Not your setup phase.' }); return; }
     io.to(room.id).emit('game_update', { gameState: room.gameState });
+    // AI auto-confirms its setup after a short pause
+    if (room.isAIGame && room.gameState.phase === 'SETUP_BLACK') {
+      setTimeout(() => {
+        handleConfirmSetup(room, 'BLACK');
+        io.to(room.id).emit('game_update', { gameState: room.gameState });
+      }, 600);
+    }
   });
 
   // ── Moves ─────────────────────────────────────────────────────────────────

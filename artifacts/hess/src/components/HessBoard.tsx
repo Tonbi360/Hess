@@ -1,4 +1,5 @@
-import { Board, Color, GamePhase } from "@/lib/types";
+import { useRef } from 'react';
+import { Board, Color, GamePhase, Piece } from "@/lib/types";
 import { PieceIcon } from "./PieceIcon";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +18,7 @@ interface HessBoardProps {
   setupSelectedSquare?: number | null;
   onSetupSquareClick?: (sq: number) => void;
   flipped?: boolean;
+  onPieceLongPress?: (piece: Piece, sq: number) => void;
 }
 
 export function HessBoard({
@@ -34,7 +36,27 @@ export function HessBoard({
   setupSelectedSquare,
   onSetupSquareClick,
   flipped = false,
+  onPieceLongPress,
 }: HessBoardProps) {
+
+  const longPressRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const startLongPress = (sq: number) => {
+    if (!onPieceLongPress) return;
+    const piece = board[sq];
+    if (!piece) return;
+    longPressRef.current = setTimeout(() => {
+      longPressRef.current = null;
+      onPieceLongPress(piece, sq);
+    }, 480);
+  };
+
+  const cancelLongPress = () => {
+    if (longPressRef.current) {
+      clearTimeout(longPressRef.current);
+      longPressRef.current = null;
+    }
+  };
 
   const handleSquareClick = (sq: number) => {
     if (phase.startsWith('SETUP_')) {
@@ -47,29 +69,24 @@ export function HessBoard({
   const isSetup = phase.startsWith('SETUP_');
   const activeSelected = isSetup ? setupSelectedSquare : selectedSquare;
 
-  // Build display order: when flipped, square at display index i = 63 - 8*(i/8|0) - (i%8)
-  // This puts White's back rank (row 7) at top and Black's back rank (row 0) at bottom
   const displaySquares = Array.from({ length: 64 }, (_, i) =>
     flipped ? 63 - Math.floor(i / 8) * 8 - (i % 8) : i
   );
 
   return (
-    <div className="relative w-full aspect-square border-2 border-border/60 rounded-sm shadow-2xl bg-muted overflow-hidden">
+    <div className="relative w-full h-full border-2 border-border/60 rounded-sm shadow-2xl bg-muted overflow-hidden">
 
       {/* Midfield Divider */}
       <div className="absolute top-1/2 left-0 w-full h-[2px] bg-primary/50 z-10 -translate-y-1/2 pointer-events-none" />
 
       <div className="grid grid-cols-8 grid-rows-8 w-full h-full">
         {displaySquares.map((sq, displayIdx) => {
-          const row = Math.floor(sq / 8);   // actual row: 0 = Black back rank, 7 = White back rank
-          const col = sq % 8;               // actual col: 0 = a-file, 7 = h-file
-
-          // Display position in the rendered grid
+          const row = Math.floor(sq / 8);
+          const col = sq % 8;
           const displayRow = Math.floor(displayIdx / 8);
           const displayCol = displayIdx % 8;
 
           const isDarkSquare = (row + col) % 2 === 1;
-
           const isSelected = activeSelected === sq;
           const isLegalMove = legalMoveSquares.includes(sq);
           const isBlockedRook = blockedRookSquares.includes(sq);
@@ -83,7 +100,6 @@ export function HessBoard({
           if (phase === 'SETUP_WHITE' && row !== 7) isInteractive = false;
           if (phase === 'SETUP_BLACK' && row !== 0) isInteractive = false;
 
-          // Coordinate labels
           const showRank = displayCol === 0;
           const showFile = displayRow === 7;
           const rankLabel = flipped ? String(row + 1) : String(8 - row);
@@ -96,8 +112,11 @@ export function HessBoard({
               key={sq}
               data-testid={`square-${sq}`}
               onClick={() => isInteractive && handleSquareClick(sq)}
+              onTouchStart={(e) => { startLongPress(sq); }}
+              onTouchEnd={cancelLongPress}
+              onTouchMove={cancelLongPress}
               className={cn(
-                "relative flex items-center justify-center w-full h-full cursor-pointer transition-colors duration-150",
+                "relative flex items-center justify-center w-full h-full cursor-pointer transition-colors duration-150 select-none",
                 isDarkSquare ? "bg-[#2c2f33]" : "bg-[#43484f]",
                 isLastMove && "after:absolute after:inset-0 after:bg-primary/20",
                 isSelected && "ring-inset ring-4 ring-primary bg-primary/20 z-20",
@@ -118,7 +137,6 @@ export function HessBoard({
                 </span>
               )}
 
-              {/* Legal move indicator */}
               {isLegalMove && (
                 <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                   {piece ? (
@@ -129,7 +147,6 @@ export function HessBoard({
                 </div>
               )}
 
-              {/* Blocked Rook target — shows where the missile aims but can't land */}
               {isBlockedRook && !isLegalMove && (
                 <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
                   <div className="w-[28%] h-[28%] rounded-full border-2 border-white/20 bg-white/10 flex items-center justify-center">
@@ -139,9 +156,8 @@ export function HessBoard({
                 </div>
               )}
 
-              {/* Piece */}
               {piece && (
-                <div className="relative z-30 w-[78%] h-[78%] flex items-center justify-center">
+                <div className="relative z-30 w-[78%] h-[78%] flex items-center justify-center pointer-events-none">
                   <PieceIcon piece={piece} size={48} />
                 </div>
               )}
