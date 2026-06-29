@@ -172,6 +172,9 @@ importers:
       '@workspace/db':
         specifier: workspace:*
         version: link:../../lib/db
+      '@workspace/hess-ai':
+        specifier: workspace:*
+        version: link:../../lib/hess-ai
       '@workspace/hess-engine':
         specifier: workspace:*
         version: link:../../lib/hess-engine
@@ -643,6 +646,16 @@ importers:
       drizzle-kit:
         specifier: ^0.31.10
         version: 0.31.10
+
+  lib/hess-ai:
+    dependencies:
+      '@workspace/hess-engine':
+        specifier: workspace:*
+        version: link:../hess-engine
+    devDependencies:
+      '@types/node':
+        specifier: 'catalog:'
+        version: 25.6.2
 
   lib/hess-engine: {}
 

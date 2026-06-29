@@ -12,6 +12,10 @@ import {
 } from '@workspace/hess-engine';
 import type { GameState, Color } from '@workspace/hess-engine';
 import { randomUUID } from 'node:crypto';
+import { aiManager } from './aiManager.js';
+import type { Difficulty } from './aiManager.js';
+
+export type { Difficulty };
 
 export interface Player {
   socketId: string;
@@ -25,6 +29,10 @@ export interface Room {
   gameState: GameState;
   players: Partial<Record<Color, Player>>;
   createdAt: number;
+  isAIGame: boolean;
+  aiDifficulty: Difficulty;
+  aiPositions: Array<{ state: GameState }>;
+  rematchVotes: Set<Color>;
 }
 
 const rooms = new Map<string, Room>();
@@ -34,7 +42,8 @@ function timerKey(roomId: string, color: Color) {
   return `${roomId}_${color}`;
 }
 
-const RECONNECT_GRACE_MS = 2 * 60 * 1000; // 2 minutes
+const RECONNECT_GRACE_MS = 2 * 60 * 1000;
+const AI_PLAYER_ID = '__AI__';
 
 function generateRoomId(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -52,6 +61,39 @@ export function createRoom(socketId: string, playerName: string): { room: Room; 
     gameState: createInitialState(),
     players: { WHITE: { socketId, name: playerName, token } },
     createdAt: Date.now(),
+    isAIGame: false,
+    aiDifficulty: 'normal',
+    aiPositions: [],
+    rematchVotes: new Set(),
+  };
+  rooms.set(id, room);
+  return { room, token };
+}
+
+export function createAiRoom(
+  socketId: string,
+  playerName: string,
+  difficulty: Difficulty = 'normal',
+): { room: Room; token: string } {
+  let id = generateRoomId();
+  while (rooms.has(id)) id = generateRoomId();
+  const token = randomUUID();
+  // Auto-confirm both setup phases so game starts immediately
+  let gs = createInitialState();
+  gs = confirmSetup(gs); // WHITE confirms
+  gs = confirmSetup(gs); // BLACK confirms
+  const room: Room = {
+    id,
+    gameState: gs,
+    players: {
+      WHITE: { socketId, name: playerName, token },
+      BLACK: { socketId: AI_PLAYER_ID, name: 'Hess', token: '' },
+    },
+    createdAt: Date.now(),
+    isAIGame: true,
+    aiDifficulty: difficulty,
+    aiPositions: [],
+    rematchVotes: new Set(),
   };
   rooms.set(id, room);
   return { room, token };
@@ -64,6 +106,7 @@ export function joinRoom(
 ): { room: Room; color: Color; token: string } | { error: string } {
   const room = rooms.get(roomId.toUpperCase());
   if (!room) return { error: 'Room not found.' };
+  if (room.isAIGame) return { error: 'This is an AI game.' };
   if (room.players.BLACK && !room.players.BLACK.disconnectedAt) return { error: 'Room is already full.' };
   if (room.players.WHITE?.socketId === socketId) return { error: 'You are already in this room.' };
   const token = randomUUID();
@@ -81,7 +124,7 @@ export function reconnectPlayer(
 
   for (const color of ['WHITE', 'BLACK'] as Color[]) {
     const player = room.players[color];
-    if (player && player.token === playerToken) {
+    if (player && player.token === playerToken && player.socketId !== AI_PLAYER_ID) {
       const key = timerKey(room.id, color);
       const timer = disconnectTimers.get(key);
       if (timer) { clearTimeout(timer); disconnectTimers.delete(key); }
@@ -115,16 +158,12 @@ export function getColorInRoom(room: Room, socketId: string): Color | null {
   return null;
 }
 
-/**
- * Mark a player as disconnected and start a grace-period timer.
- * Returns room info if found, plus a schedule function to call after
- * setting up the timer callback.
- */
 export function markPlayerDisconnected(
   socketId: string,
   onExpire: (roomId: string, color: Color) => void,
 ): { roomId: string; color: Color } | null {
   for (const [roomId, room] of rooms.entries()) {
+    if (room.isAIGame) continue;
     for (const color of ['WHITE', 'BLACK'] as Color[]) {
       const player = room.players[color];
       if (player && player.socketId === socketId) {
@@ -171,17 +210,33 @@ export function handleConfirmSetup(room: Room, color: Color): boolean {
   return true;
 }
 
-export function handleMakeMove(room: Room, color: Color, from: number, to: number): boolean {
+export interface MakeMoveResult {
+  ok: boolean;
+  aiResponded?: boolean;
+  gameEnded?: boolean;
+}
+
+export function handleMakeMove(room: Room, color: Color, from: number, to: number): MakeMoveResult {
   const { gameState } = room;
-  if (gameState.phase !== 'PLAYING') return false;
-  if (gameState.currentTurn !== color) return false;
+  if (gameState.phase !== 'PLAYING') return { ok: false };
+  if (gameState.currentTurn !== color) return { ok: false };
   const piece = gameState.board[from];
-  if (!piece || piece.color !== color) return false;
+  if (!piece || piece.color !== color) return { ok: false };
   const legal = getLegalMoves(gameState, from);
-  if (!legal.includes(to)) return false;
+  if (!legal.includes(to)) return { ok: false };
+
+  if (room.isAIGame) room.aiPositions.push({ state: { ...gameState } });
+
   const result = applyMove(gameState, from, to);
   room.gameState = result.state;
-  return true;
+
+  if (result.state.phase === 'GAME_OVER') {
+    triggerAiTraining(room);
+    return { ok: true, gameEnded: true };
+  }
+  if (result.state.phase === 'JESTER_SACRIFICE') return { ok: true };
+
+  return { ok: true };
 }
 
 export function handleKingSwap(room: Room, color: Color, pawnSq: number): boolean {
@@ -194,6 +249,9 @@ export function handleKingSwap(room: Room, color: Color, pawnSq: number): boolea
   if (!validTargets.includes(pawnSq)) return false;
   const kingSq = findKing(gameState.board, color);
   if (kingSq === -1) return false;
+
+  if (room.isAIGame) room.aiPositions.push({ state: { ...gameState } });
+
   room.gameState = applyKingSwap(gameState, kingSq, pawnSq);
   return true;
 }
@@ -205,10 +263,75 @@ export function handleSacrifice(room: Room, color: Color, sq: number): boolean {
   const validTargets = getValidSacrificeTargets(gameState);
   if (!validTargets.includes(sq)) return false;
   room.gameState = applyJesterSacrifice(gameState, sq);
+
+  if (room.gameState.phase === 'GAME_OVER') triggerAiTraining(room);
   return true;
 }
 
-// Clean up rooms older than 4 hours with no players
+/** Compute and apply the AI's move. Returns the new game state or null if AI can't move. */
+export function computeAndApplyAiMove(room: Room): GameState | null {
+  if (!room.isAIGame || room.gameState.phase !== 'PLAYING') return null;
+  if (room.gameState.currentTurn !== 'BLACK') return null;
+
+  room.aiPositions.push({ state: { ...room.gameState } });
+
+  const move = aiManager.computeMove(room.gameState, room.aiDifficulty);
+  if (!move) return null;
+
+  if (move.isSwap && move.pawnSq !== undefined) {
+    const kingSq = findKing(room.gameState.board, 'BLACK');
+    room.gameState = applyKingSwap(room.gameState, kingSq, move.pawnSq);
+  } else {
+    const result = applyMove(room.gameState, move.from, move.to);
+    if (result.jesterBounced) {
+      const targets = getValidSacrificeTargets(result.state);
+      if (targets.length > 0) {
+        room.gameState = applyJesterSacrifice(result.state, targets[0]);
+      } else {
+        room.gameState = result.state;
+      }
+    } else {
+      room.gameState = result.state;
+    }
+  }
+
+  if (room.gameState.phase === 'GAME_OVER') triggerAiTraining(room);
+  return room.gameState;
+}
+
+function triggerAiTraining(room: Room): void {
+  if (!room.isAIGame || room.aiPositions.length === 0) return;
+  const positions = [...room.aiPositions];
+  const winner = room.gameState.winner;
+  room.aiPositions = [];
+  setImmediate(() => {
+    aiManager.recordAndTrain(positions, winner);
+  });
+}
+
+/** Request a rematch. Returns true when both players have voted (game should reset). */
+export function requestRematch(room: Room, color: Color): boolean {
+  room.rematchVotes.add(color);
+  if (room.isAIGame) return true;
+  return room.rematchVotes.has('WHITE') && room.rematchVotes.has('BLACK');
+}
+
+/** Reset game state for a rematch in the same room. */
+export function resetRoomForRematch(room: Room): void {
+  let gs = createInitialState();
+  if (room.isAIGame) {
+    gs = confirmSetup(gs);
+    gs = confirmSetup(gs);
+  }
+  room.gameState = gs;
+  room.aiPositions = [];
+  room.rematchVotes = new Set();
+}
+
+export function deleteRoom(roomId: string): void {
+  rooms.delete(roomId);
+}
+
 setInterval(() => {
   const cutoff = Date.now() - 4 * 60 * 60 * 1000;
   for (const [id, room] of rooms.entries()) {

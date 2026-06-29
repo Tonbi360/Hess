@@ -17,6 +17,17 @@ export function createDefaultBoard(): Board {
   return board;
 }
 
+function sqToAlg(sq: number): string {
+  return String.fromCharCode(97 + (sq % 8)) + String(8 - Math.floor(sq / 8));
+}
+
+function pieceAbbr(type: PieceType): string {
+  const map: Record<PieceType, string> = {
+    KING: 'K', QUEEN: 'Q', ROOK: 'R', BISHOP: 'B', KNIGHT: 'N', PAWN: 'P', JESTER: 'J',
+  };
+  return map[type];
+}
+
 export function createInitialState(): GameState {
   return {
     board: createDefaultBoard(),
@@ -286,8 +297,9 @@ export function applyMove(state: GameState, from: number, to: number): MoveResul
     else capturedByBlack.push(targetPiece);
     if (targetPiece.type === 'KING') {
       board[to] = movingPiece; board[from] = null;
+      const notation = `${pieceAbbr(movingPiece.type)}:${sqToAlg(from)}-${sqToAlg(to)}`;
       return {
-        state: { ...state, board, phase: 'GAME_OVER', winner: movingPiece.color, winReason: 'KING_CAPTURED', capturedByWhite, capturedByBlack, lastMove: { from, to } },
+        state: { ...state, board, phase: 'GAME_OVER', winner: movingPiece.color, winReason: 'KING_CAPTURED', capturedByWhite, capturedByBlack, lastMove: { from, to }, moveHistory: [...state.moveHistory, notation] },
         jesterBounced: false,
       };
     }
@@ -302,11 +314,13 @@ export function applyMove(state: GameState, from: number, to: number): MoveResul
 
   currentTurn = enemyColor;
 
+  const notation = `${pieceAbbr(movingPiece.type)}:${sqToAlg(from)}-${sqToAlg(to)}`;
   const nextState: GameState = {
     ...state, board, currentTurn, phase: 'PLAYING',
     whiteSwapsLeft, blackSwapsLeft, winner, winReason,
     jesterSacrificeCtx: null, kingSwapCtx: null,
     hasPawnMoved, lastMove: { from, to }, capturedByWhite, capturedByBlack,
+    moveHistory: [...state.moveHistory, notation],
   };
 
   if (checkDesperationStale(nextState, currentTurn)) {
@@ -324,9 +338,11 @@ export function applyKingSwap(state: GameState, kingSq: number, pawnSq: number):
   const enemyColor: Color = currentTurn === 'WHITE' ? 'BLACK' : 'WHITE';
   const whiteSwapsLeft = currentTurn === 'WHITE' ? state.whiteSwapsLeft - 1 : state.whiteSwapsLeft;
   const blackSwapsLeft = currentTurn === 'BLACK' ? state.blackSwapsLeft - 1 : state.blackSwapsLeft;
+  const swapNotation = `K-swap:${sqToAlg(kingSq)}↔${sqToAlg(pawnSq)}`;
   const nextState: GameState = {
     ...state, board, currentTurn: enemyColor, phase: 'PLAYING',
     whiteSwapsLeft, blackSwapsLeft, kingSwapCtx: null, lastMove: { from: kingSq, to: pawnSq },
+    moveHistory: [...state.moveHistory, swapNotation],
   };
   if (checkDesperationStale(nextState, enemyColor)) {
     return { ...nextState, phase: 'GAME_OVER', winner: currentTurn, winReason: 'DESPERATION_STALE' };

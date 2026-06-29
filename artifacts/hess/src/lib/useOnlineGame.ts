@@ -34,14 +34,16 @@ export function clearSession() {
   try { localStorage.removeItem(SESSION_KEY); } catch {}
 }
 
+export type Difficulty = 'easy' | 'normal' | 'hard';
+
 export type ConnectionStatus =
   | 'idle'
   | 'connecting'
-  | 'waiting'      // created room, waiting for opponent
-  | 'ready'        // both players in, game active
-  | 'reconnecting' // lost connection, trying to get back
-  | 'opponent_away'// opponent disconnected, waiting for them
-  | 'disconnected' // opponent permanently left
+  | 'waiting'
+  | 'ready'
+  | 'reconnecting'
+  | 'opponent_away'
+  | 'disconnected'
   | 'error';
 
 export interface OnlinePlayers {
@@ -64,10 +66,15 @@ export interface OnlineGameState {
   isKingSwapMode: boolean;
   attackedKingSquare: number | null;
   savedSession: SavedSession | null;
+  isAIGame: boolean;
+  aiDifficulty: Difficulty;
+  aiIsLearning: boolean;
+  rematchRequestedByOpponent: boolean;
 }
 
 export interface OnlineGameActions {
   createRoom: (playerName: string) => void;
+  createAiRoom: (playerName: string, difficulty: Difficulty) => void;
   joinRoom: (roomId: string, playerName: string) => void;
   reconnectRoom: () => void;
   setupSwap: (sq1: number, sq2: number) => void;
@@ -76,8 +83,12 @@ export interface OnlineGameActions {
   initiateKingSwap: () => void;
   cancelKingSwap: () => void;
   sacrificePiece: (sq: number) => void;
+  requestRematch: () => void;
   disconnect: () => void;
   dismissSession: () => void;
+  startSelfPlay: (password: string, numGames: number, depth: number) => void;
+  resetAiWeights: (password: string) => void;
+  getAiStats: (password: string) => void;
 }
 
 export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameActions } {
@@ -96,6 +107,10 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
   const [selectedSquare, setSelectedSquare] = useState<number | null>(null);
   const [isKingSwapMode, setIsKingSwapMode] = useState(false);
   const [savedSession, setSavedSession] = useState<SavedSession | null>(() => getSavedSession());
+  const [isAIGame, setIsAIGame] = useState(false);
+  const [aiDifficulty, setAiDifficulty] = useState<Difficulty>('normal');
+  const [aiIsLearning, setAiIsLearning] = useState(false);
+  const [rematchRequestedByOpponent, setRematchRequestedByOpponent] = useState(false);
 
   const setMyColorBoth = (color: Color) => {
     setMyColor(color);
@@ -110,7 +125,7 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
       path: `${base}/api/socket.io/`,
       autoConnect: true,
       transports: ['websocket', 'polling'],
-      reconnection: false, // we handle reconnection manually
+      reconnection: false,
     });
     socketRef.current = s;
     return s;
@@ -120,7 +135,7 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
     socket.removeAllListeners();
 
     socket.on('connect_error', () => {
-      if (status === 'reconnecting') setErrorMsg('Could not reach the server. Retrying…');
+      setErrorMsg('Could not reach the server. Retrying…');
     });
 
     socket.on('room_created', ({ roomId: rid, color, playerToken }: { roomId: string; color: Color; playerToken: string }) => {
@@ -130,13 +145,32 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
       setMyColorBoth(color);
       setStatus('waiting');
       setErrorMsg(null);
+      setIsAIGame(false);
       saveSession({ roomId: rid, playerToken, myColor: color, myName: myNameRef.current });
+    });
+
+    socket.on('ai_game_started', ({
+      roomId: rid, color, playerToken, gameState: gs, players: ps, aiDifficulty: diff,
+    }: { roomId: string; color: Color; playerToken: string; gameState: GameState; players: OnlinePlayers; isAIGame: boolean; aiDifficulty: Difficulty }) => {
+      playerTokenRef.current = playerToken;
+      roomIdRef.current = rid;
+      setRoomId(rid);
+      setMyColorBoth(color);
+      setGameState(gs);
+      setPlayers(ps);
+      setStatus('ready');
+      setIsAIGame(true);
+      setAiDifficulty(diff ?? 'normal');
+      setErrorMsg(null);
+      setSelectedSquare(null);
+      setIsKingSwapMode(false);
+      setAiIsLearning(false);
+      setRematchRequestedByOpponent(false);
     });
 
     socket.on('room_ready', ({
       roomId: rid, gameState: gs, players: ps, playerTokens,
     }: { roomId: string; gameState: GameState; players: OnlinePlayers; playerTokens?: Partial<Record<Color, string>> }) => {
-      // The token for our color arrives here if we're BLACK (we joined)
       if (playerTokens && myColorRef.current && playerTokens[myColorRef.current]) {
         const token = playerTokens[myColorRef.current]!;
         playerTokenRef.current = token;
@@ -148,13 +182,15 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
       setPlayers(ps);
       setStatus('ready');
       setErrorMsg(null);
+      setIsAIGame(false);
       setSelectedSquare(null);
       setIsKingSwapMode(false);
+      setRematchRequestedByOpponent(false);
     });
 
     socket.on('reconnected', ({
-      roomId: rid, color, gameState: gs, players: ps,
-    }: { roomId: string; color: Color; gameState: GameState; players: OnlinePlayers }) => {
+      roomId: rid, color, gameState: gs, players: ps, isAIGame: aiFlag, aiDifficulty: diff,
+    }: { roomId: string; color: Color; gameState: GameState; players: OnlinePlayers; isAIGame?: boolean; aiDifficulty?: Difficulty }) => {
       roomIdRef.current = rid;
       setRoomId(rid);
       setMyColorBoth(color);
@@ -162,6 +198,8 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
       setPlayers(ps);
       setStatus('ready');
       setErrorMsg(null);
+      setIsAIGame(aiFlag ?? false);
+      setAiDifficulty(diff ?? 'normal');
       setSelectedSquare(null);
       setIsKingSwapMode(false);
     });
@@ -171,6 +209,26 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
       setSelectedSquare(null);
       setIsKingSwapMode(false);
       if (gs.phase === 'GAME_OVER') clearSession();
+    });
+
+    socket.on('rematch_start', ({ gameState: gs, players: ps }: { gameState: GameState; players: OnlinePlayers }) => {
+      setGameState(gs);
+      setPlayers(ps);
+      setSelectedSquare(null);
+      setIsKingSwapMode(false);
+      setRematchRequestedByOpponent(false);
+    });
+
+    socket.on('rematch_requested', () => {
+      setRematchRequestedByOpponent(true);
+    });
+
+    socket.on('ai_training_start', () => {
+      setAiIsLearning(true);
+    });
+
+    socket.on('ai_training_done', () => {
+      setAiIsLearning(false);
     });
 
     socket.on('opponent_disconnected', ({ gracePeriodSeconds }: { gracePeriodSeconds: number }) => {
@@ -195,12 +253,10 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
     });
   }, [status]);
 
-  // On mount: check for a saved session so the lobby can show "Rejoin" prompt
   useEffect(() => {
     setSavedSession(getSavedSession());
   }, []);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => { socketRef.current?.disconnect(); };
   }, []);
@@ -212,6 +268,17 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
     const socket = getSocket();
     setupSocketListeners(socket);
     socket.emit('create_room', { playerName });
+  }, [getSocket, setupSocketListeners]);
+
+  const createAiRoom = useCallback((playerName: string, difficulty: Difficulty) => {
+    myNameRef.current = playerName;
+    setStatus('connecting');
+    setErrorMsg(null);
+    setIsAIGame(true);
+    setAiDifficulty(difficulty);
+    const socket = getSocket();
+    setupSocketListeners(socket);
+    socket.emit('create_ai_room', { playerName, difficulty });
   }, [getSocket, setupSocketListeners]);
 
   const joinRoom = useCallback((rid: string, playerName: string) => {
@@ -261,6 +328,11 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
     setSelectedSquare(null);
   }, []);
 
+  const requestRematch = useCallback(() => {
+    socketRef.current?.emit('request_rematch');
+    setRematchRequestedByOpponent(false);
+  }, []);
+
   const selectSquare = useCallback((sq: number) => {
     if (!gameState || !myColorRef.current) return;
     const { board, currentTurn, phase } = gameState;
@@ -289,7 +361,6 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
     }
 
     if (sq === selectedSquare) { setSelectedSquare(null); return; }
-
     if (piece && piece.color === myCol) { setSelectedSquare(sq); return; }
 
     const legal = getLegalMoves(gameState, selectedSquare);
@@ -315,6 +386,9 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
     setIsKingSwapMode(false);
     setErrorMsg(null);
     setSavedSession(null);
+    setIsAIGame(false);
+    setAiIsLearning(false);
+    setRematchRequestedByOpponent(false);
   }, []);
 
   const dismissSession = useCallback(() => {
@@ -322,11 +396,27 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
     setSavedSession(null);
   }, []);
 
-  // Derived UI state
+  const startSelfPlay = useCallback((password: string, numGames: number, depth: number) => {
+    const socket = getSocket();
+    setupSocketListeners(socket);
+    socket.emit('start_self_play', { password, numGames, depth });
+  }, [getSocket, setupSocketListeners]);
+
+  const resetAiWeights = useCallback((password: string) => {
+    const socket = getSocket();
+    setupSocketListeners(socket);
+    socket.emit('reset_ai_weights', { password });
+  }, [getSocket, setupSocketListeners]);
+
+  const getAiStats = useCallback((password: string) => {
+    const socket = getSocket();
+    setupSocketListeners(socket);
+    socket.emit('get_ai_stats', { password });
+  }, [getSocket, setupSocketListeners]);
+
   const legalMoveSquares: number[] = selectedSquare !== null && gameState && !isKingSwapMode
     ? getLegalMoves(gameState, selectedSquare) : [];
 
-  // For a selected Rook: show its ±4/±6 targets that are blocked by friendly pieces
   const blockedRookSquares: number[] = (() => {
     if (selectedSquare === null || !gameState || isKingSwapMode) return [];
     const piece = gameState.board[selectedSquare];
@@ -352,12 +442,13 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
       gameState, myColor, roomId, players, status, errorMsg,
       selectedSquare, legalMoveSquares, blockedRookSquares, validSwapTargets,
       validSacrificeTargets, isKingSwapMode, attackedKingSquare,
-      savedSession,
+      savedSession, isAIGame, aiDifficulty, aiIsLearning, rematchRequestedByOpponent,
     },
     actions: {
-      createRoom, joinRoom, reconnectRoom, setupSwap, confirmSetup,
+      createRoom, createAiRoom, joinRoom, reconnectRoom, setupSwap, confirmSetup,
       selectSquare, initiateKingSwap, cancelKingSwap, sacrificePiece,
-      disconnect: disconnectFn, dismissSession,
+      requestRematch, disconnect: disconnectFn, dismissSession,
+      startSelfPlay, resetAiWeights, getAiStats,
     },
   };
 }
