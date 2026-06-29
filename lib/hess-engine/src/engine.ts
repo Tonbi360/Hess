@@ -156,7 +156,10 @@ function getPawnMoves(board: Board, sq: number, color: Color, hasPawnMoved: bool
 function getJesterMoves(board: Board, sq: number, color: Color): number[] {
   const moves: number[] = [];
   const r = getRow(sq); const c = getCol(sq);
-  const dir = color === 'WHITE' ? -1 : 1;
+  const forwardDir = color === 'WHITE' ? -1 : 1;
+  // At the far rank (no forward squares exist) retreat diagonally backward
+  const atFarRank = (color === 'WHITE' && r === 0) || (color === 'BLACK' && r === 7);
+  const dir = atFarRank ? -forwardDir : forwardDir;
   for (const dc of [-1, 1]) {
     const nc = c + dc;
     if (nc < 0 || nc > 7) continue;

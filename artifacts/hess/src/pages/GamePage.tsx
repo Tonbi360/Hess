@@ -12,9 +12,9 @@ import {
   getValidSwapTargets,
 } from '@/lib/engine';
 
-// Board occupies min(dvh minus fixed chrome, vw minus padding)
+// Board occupies min(dvh minus fixed chrome, full vw) — edge to edge on portrait phones
 // Fixed chrome: topBar(44) + oppBar(32) + myBar(32) + kingSwapArea(44) + gaps(20) = 172px
-const BOARD_SIZE = 'min(calc(100dvh - 172px), calc(100vw - 24px))';
+const BOARD_SIZE = 'min(calc(100dvh - 172px), 100vw)';
 
 const PIECE_INFO: Record<PieceType, { title: string; desc: string; special?: string }> = {
   KING:   { title: 'King',   desc: 'Moves 1 square in any direction.', special: '3× per game: swap positions with any friendly Pawn — cannot land in an attacked square.' },
