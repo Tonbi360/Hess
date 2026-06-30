@@ -7,14 +7,6 @@ import { JesterSacrificeOverlay } from '@/components/JesterSacrificeOverlay';
 import { WinScreen } from '@/components/WinScreen';
 import { HamburgerMenu } from '@/components/HamburgerMenu';
 import { PieceIcon } from '@/components/PieceIcon';
-import {
-  getLegalMoves,
-  getValidSwapTargets,
-} from '@/lib/engine';
-
-// Board occupies min(dvh minus fixed chrome, full vw) — edge to edge on portrait phones
-// Fixed chrome: topBar(44) + oppBar(32) + myBar(32) + kingSwapArea(44) + gaps(20) = 172px
-const BOARD_SIZE = 'min(calc(100dvh - 172px), 100vw)';
 
 const PIECE_INFO: Record<PieceType, { title: string; desc: string; special?: string }> = {
   KING:   { title: 'King',   desc: 'Moves 1 square in any direction.', special: '3× per game: swap positions with any friendly Pawn — cannot land in an attacked square.' },
@@ -26,80 +18,7 @@ const PIECE_INFO: Record<PieceType, { title: string; desc: string; special?: str
   JESTER: { title: 'Jester', desc: 'Moves and captures diagonally forward only.', special: 'Cannot be directly captured — attackers bounce back. The Jester\'s owner must then sacrifice another piece (not the King).' },
 };
 
-// ── Setup phase wrapper ──────────────────────────────────────────────────────
-function SetupBoardWrapper({ state, actions }: { state: OnlineGameState; actions: OnlineGameActions }) {
-  const [setupSelected, setSetupSelected] = useState<number | null>(null);
-  const [longPressedPiece, setLongPressedPiece] = useState<Piece | null>(null);
-  const { gameState, myColor } = state;
-  if (!gameState || !myColor) return null;
-
-  const isMySetup = (gameState.phase === 'SETUP_WHITE' && myColor === 'WHITE') ||
-    (gameState.phase === 'SETUP_BLACK' && myColor === 'BLACK');
-
-  const handleSetupClick = (sq: number) => {
-    if (!isMySetup) return;
-    const row = Math.floor(sq / 8);
-    if (myColor === 'WHITE' && row !== 7) return;
-    if (myColor === 'BLACK' && row !== 0) return;
-    if (setupSelected === null) { setSetupSelected(sq); }
-    else { if (setupSelected !== sq) actions.setupSwap(setupSelected, sq); setSetupSelected(null); }
-  };
-
-  return (
-    <div
-      className="relative flex flex-col items-center"
-      style={{ width: BOARD_SIZE }}
-    >
-      <div style={{ width: BOARD_SIZE, height: BOARD_SIZE }} className="relative">
-        <HessBoard
-          board={gameState.board}
-          selectedSquare={setupSelected}
-          legalMoveSquares={[]}
-          validSwapTargets={[]}
-          validSacrificeTargets={[]}
-          attackedKingSquare={null}
-          lastMove={gameState.lastMove}
-          onSquareClick={handleSetupClick}
-          phase={gameState.phase}
-          currentTurn={gameState.currentTurn}
-          setupSelectedSquare={setupSelected}
-          onSetupSquareClick={handleSetupClick}
-          flipped={myColor === 'BLACK'}
-          onPieceLongPress={(p) => setLongPressedPiece(p)}
-        />
-
-        {/* Long-press tooltip overlay */}
-        <AnimatePresence>
-          {longPressedPiece && (
-            <PieceTooltip piece={longPressedPiece} onDismiss={() => setLongPressedPiece(null)} />
-          )}
-        </AnimatePresence>
-      </div>
-
-      <div className="text-center space-y-2 pt-2">
-        {isMySetup ? (
-          <>
-            <p className="text-xs text-muted-foreground">Hold any piece to learn how it moves. Tap two pieces to swap them.</p>
-            <button
-              onClick={() => { setSetupSelected(null); actions.confirmSetup(); }}
-              className="px-8 py-2.5 bg-primary text-primary-foreground font-serif tracking-widest rounded-xl hover:opacity-90 transition-opacity"
-            >
-              Ready
-            </button>
-          </>
-        ) : (
-          <p className="text-xs text-muted-foreground/60 animate-pulse">
-            {gameState.phase === 'SETUP_BLACK' && state.isAIGame
-              ? 'Hess is setting up…'
-              : `Waiting for ${gameState.phase === 'SETUP_WHITE' ? 'White' : 'Black'} to finish setup…`}
-          </p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── Piece tooltip ────────────────────────────────────────────────────────────
+// ── Piece tooltip ─────────────────────────────────────────────────────────────
 function PieceTooltip({ piece, onDismiss }: { piece: Piece; onDismiss: () => void }) {
   const info = PIECE_INFO[piece.type];
   return (
@@ -129,7 +48,83 @@ function PieceTooltip({ piece, onDismiss }: { piece: Piece; onDismiss: () => voi
   );
 }
 
-// ── Main GamePage ────────────────────────────────────────────────────────────
+// ── Setup phase ───────────────────────────────────────────────────────────────
+function SetupBoardWrapper({ state, actions }: { state: OnlineGameState; actions: OnlineGameActions }) {
+  const [setupSelected, setSetupSelected] = useState<number | null>(null);
+  const [longPressedPiece, setLongPressedPiece] = useState<Piece | null>(null);
+  const { gameState, myColor } = state;
+  if (!gameState || !myColor) return null;
+
+  const isMySetup =
+    (gameState.phase === 'SETUP_WHITE' && myColor === 'WHITE') ||
+    (gameState.phase === 'SETUP_BLACK' && myColor === 'BLACK');
+
+  const handleSetupClick = (sq: number) => {
+    if (!isMySetup) return;
+    const row = Math.floor(sq / 8);
+    if (myColor === 'WHITE' && row !== 7) return;
+    if (myColor === 'BLACK' && row !== 0) return;
+    if (setupSelected === null) {
+      setSetupSelected(sq);
+    } else {
+      if (setupSelected !== sq) actions.setupSwap(setupSelected, sq);
+      setSetupSelected(null);
+    }
+  };
+
+  return (
+    /* fills the full flex-1 space handed down from GamePage */
+    <div className="flex-1 min-h-0 w-full flex flex-col">
+      {/* Board fills all remaining height */}
+      <div className="flex-1 min-h-0 w-full relative">
+        <HessBoard
+          board={gameState.board}
+          selectedSquare={setupSelected}
+          legalMoveSquares={[]}
+          validSwapTargets={[]}
+          validSacrificeTargets={[]}
+          attackedKingSquare={null}
+          lastMove={gameState.lastMove}
+          onSquareClick={handleSetupClick}
+          phase={gameState.phase}
+          currentTurn={gameState.currentTurn}
+          setupSelectedSquare={setupSelected}
+          onSetupSquareClick={handleSetupClick}
+          flipped={myColor === 'BLACK'}
+          onPieceLongPress={(p) => setLongPressedPiece(p)}
+        />
+        <AnimatePresence>
+          {longPressedPiece && (
+            <PieceTooltip piece={longPressedPiece} onDismiss={() => setLongPressedPiece(null)} />
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* Button row – fixed height */}
+      <div className="shrink-0 flex flex-col items-center gap-1 py-2">
+        {isMySetup ? (
+          <>
+            <p className="text-xs text-muted-foreground">Hold a piece to see how it moves. Tap two pieces to swap.</p>
+            <button
+              onClick={() => { setSetupSelected(null); actions.confirmSetup(); }}
+              className="px-8 py-2 bg-primary text-primary-foreground font-serif tracking-widest rounded-xl hover:opacity-90 transition-opacity"
+            >
+              Ready
+            </button>
+          </>
+        ) : (
+          <p className="text-xs text-muted-foreground/60 animate-pulse">
+            {gameState.phase === 'SETUP_BLACK' && state.isAIGame
+              ? 'Hess is setting up…'
+              : `Waiting for ${gameState.phase === 'SETUP_WHITE' ? 'White' : 'Black'} to finish setup…`}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Main GamePage ─────────────────────────────────────────────────────────────
 interface GamePageProps {
   state: OnlineGameState;
   actions: OnlineGameActions;
@@ -184,7 +179,7 @@ export default function GamePage({ state, actions, onLeave }: GamePageProps) {
     const swaps = isMe ? mySwaps : oppSwaps;
     const isCurrentTurn = gameState.currentTurn === color && !isSetup && !isJesterSacrifice;
     return (
-      <div className="flex items-center justify-between px-3 h-8">
+      <div className="shrink-0 h-8 flex items-center justify-between px-3 w-full">
         <div className="flex items-center gap-2 min-w-0">
           <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${
             color === 'WHITE' ? 'bg-[#d4c5a9] border border-[#a89880]' : 'bg-[#3a3a3a] border border-[#555]'
@@ -203,7 +198,7 @@ export default function GamePage({ state, actions, onLeave }: GamePageProps) {
   return (
     <div className="h-[100dvh] w-full bg-background text-foreground flex flex-col overflow-hidden font-sans">
 
-      {/* ── Top bar — fixed h-11 (44px) ── */}
+      {/* ── Top bar ── */}
       <div className="shrink-0 h-11 flex items-center justify-between px-3 border-b border-border bg-card/50">
         <div className="flex items-center gap-2">
           <h1 className="font-serif text-xl text-primary tracking-widest">HESS</h1>
@@ -241,24 +236,18 @@ export default function GamePage({ state, actions, onLeave }: GamePageProps) {
         />
       </div>
 
-      {/* ── Main board area — flex-1, board fills available space ── */}
-      <div className="flex-1 min-h-0 flex flex-col items-center justify-center">
+      {/* ── Main area — fills all remaining height ── */}
+      <div className="flex-1 min-h-0 flex flex-col">
 
         {isSetup ? (
-          /* Setup mode — board + confirm button */
           <SetupBoardWrapper state={state} actions={actions} />
         ) : (
-          /* Play mode — opponent bar, board, my bar */
-          <div className="flex flex-col" style={{ width: BOARD_SIZE }}>
-
+          <>
             {/* Opponent bar */}
             <PlayerBar isMe={false} />
 
-            {/* Board — explicit square size */}
-            <div
-              className="relative shrink-0"
-              style={{ width: BOARD_SIZE, height: BOARD_SIZE }}
-            >
+            {/* Board — flex-1 fills every remaining pixel */}
+            <div className="flex-1 min-h-0 w-full relative">
               <HessBoard
                 board={gameState.board}
                 selectedSquare={selectedSquare}
@@ -277,7 +266,6 @@ export default function GamePage({ state, actions, onLeave }: GamePageProps) {
                 onPieceLongPress={(p) => setLongPressedPiece(p)}
               />
 
-              {/* Jester overlay */}
               {isJesterSacrifice && gameState.jesterSacrificeCtx && (
                 <JesterSacrificeOverlay
                   sacrificingColor={gameState.jesterSacrificeCtx.sacrificingColor}
@@ -285,7 +273,6 @@ export default function GamePage({ state, actions, onLeave }: GamePageProps) {
                 />
               )}
 
-              {/* Win screen */}
               <WinScreen
                 winner={gameState.winner}
                 winReason={gameState.winReason}
@@ -295,7 +282,6 @@ export default function GamePage({ state, actions, onLeave }: GamePageProps) {
                 onLeave={onLeave}
               />
 
-              {/* Opponent away / left */}
               <AnimatePresence>
                 {(status === 'opponent_away' || status === 'disconnected') && (
                   <motion.div
@@ -326,7 +312,6 @@ export default function GamePage({ state, actions, onLeave }: GamePageProps) {
                 )}
               </AnimatePresence>
 
-              {/* Rematch request */}
               <AnimatePresence>
                 {rematchRequestedByOpponent && gameState.phase === 'GAME_OVER' && (
                   <motion.div
@@ -342,7 +327,6 @@ export default function GamePage({ state, actions, onLeave }: GamePageProps) {
                 )}
               </AnimatePresence>
 
-              {/* Long-press piece tooltip */}
               <AnimatePresence>
                 {longPressedPiece && (
                   <PieceTooltip piece={longPressedPiece} onDismiss={() => setLongPressedPiece(null)} />
@@ -352,29 +336,27 @@ export default function GamePage({ state, actions, onLeave }: GamePageProps) {
 
             {/* My bar */}
             <PlayerBar isMe={true} />
-          </div>
+          </>
         )}
       </div>
 
-      {/* ── King swap button — fixed h-11 (44px) ── */}
+      {/* ── King swap button ── */}
       <div className="shrink-0 h-11 flex items-center px-3">
-        <div className="w-full" style={{ maxWidth: BOARD_SIZE, margin: '0 auto' }}>
-          <AnimatePresence>
-            {gameState.phase === 'PLAYING' && !isKingSwapMode && isMyTurn && !isJesterSacrifice && (
-              <motion.div
-                initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
+        <AnimatePresence>
+          {gameState.phase === 'PLAYING' && !isKingSwapMode && isMyTurn && !isJesterSacrifice && (
+            <motion.div className="w-full"
+              initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 4 }}
+            >
+              <button
+                onClick={actions.initiateKingSwap}
+                disabled={mySwaps === 0}
+                className="w-full py-1.5 rounded-lg border border-border/50 text-xs font-serif tracking-wider text-muted-foreground disabled:opacity-20 hover:border-primary/40 hover:text-primary transition-colors"
               >
-                <button
-                  onClick={actions.initiateKingSwap}
-                  disabled={mySwaps === 0}
-                  className="w-full py-1.5 rounded-lg border border-border/50 text-xs font-serif tracking-wider text-muted-foreground disabled:opacity-20 hover:border-primary/40 hover:text-primary transition-colors"
-                >
-                  King Swap ({mySwaps} left)
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                King Swap ({mySwaps} left)
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </div>
   );
