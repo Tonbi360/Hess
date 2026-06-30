@@ -184,7 +184,7 @@ export default function GamePage({ state, actions, onLeave }: GamePageProps) {
     const swaps = isMe ? mySwaps : oppSwaps;
     const isCurrentTurn = gameState.currentTurn === color && !isSetup && !isJesterSacrifice;
     return (
-      <div className="flex items-center justify-between px-0.5 h-8">
+      <div className="flex items-center justify-between px-3 h-8">
         <div className="flex items-center gap-2 min-w-0">
           <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${
             color === 'WHITE' ? 'bg-[#d4c5a9] border border-[#a89880]' : 'bg-[#3a3a3a] border border-[#555]'
@@ -209,7 +209,7 @@ export default function GamePage({ state, actions, onLeave }: GamePageProps) {
           <h1 className="font-serif text-xl text-primary tracking-widest">HESS</h1>
           {isAIGame ? (
             <span className="text-[10px] text-muted-foreground/50 border border-border/30 rounded px-1.5 py-0.5">
-              vs Hess · {state.aiDifficulty}
+              {myName} vs Hess · {state.aiDifficulty}
             </span>
           ) : roomId && (
             <span className="font-mono text-[10px] text-muted-foreground/40 border border-border/30 rounded px-1">{roomId}</span>
@@ -241,8 +241,8 @@ export default function GamePage({ state, actions, onLeave }: GamePageProps) {
         />
       </div>
 
-      {/* ── Main board area — flex-1, centered ── */}
-      <div className="flex-1 min-h-0 flex flex-col items-center justify-center py-1">
+      {/* ── Main board area — flex-1, board fills available space ── */}
+      <div className="flex-1 min-h-0 flex flex-col items-center justify-center">
 
         {isSetup ? (
           /* Setup mode — board + confirm button */

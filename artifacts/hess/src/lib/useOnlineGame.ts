@@ -125,7 +125,9 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
       path: `${base}/api/socket.io/`,
       autoConnect: true,
       transports: ['websocket', 'polling'],
-      reconnection: false,
+      reconnection: true,
+      reconnectionAttempts: 10,
+      reconnectionDelay: 1000,
     });
     socketRef.current = s;
     return s;
@@ -166,6 +168,7 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
       setIsKingSwapMode(false);
       setAiIsLearning(false);
       setRematchRequestedByOpponent(false);
+      saveSession({ roomId: rid, playerToken, myColor: color, myName: myNameRef.current });
     });
 
     socket.on('room_ready', ({
@@ -250,6 +253,21 @@ export function useOnlineGame(): { state: OnlineGameState; actions: OnlineGameAc
     socket.on('error', ({ message }: { message: string }) => {
       setErrorMsg(message);
       if (status === 'reconnecting') setStatus('error');
+    });
+
+    // Auto-reconnect when network drops mid-game
+    socket.on('disconnect', (reason) => {
+      if (reason === 'io client disconnect') return; // intentional leave
+      if (roomIdRef.current) setStatus('reconnecting');
+    });
+
+    socket.on('connect', () => {
+      // On reconnect (roomIdRef is set), rejoin the room automatically
+      const rid = roomIdRef.current;
+      const token = playerTokenRef.current;
+      if (rid && token) {
+        socket.emit('reconnect_room', { roomId: rid, playerToken: token });
+      }
     });
   }, [status]);
 
