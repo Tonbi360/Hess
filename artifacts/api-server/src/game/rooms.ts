@@ -230,6 +230,24 @@ export function handleMakeMove(room: Room, color: Color, from: number, to: numbe
     triggerAiTraining(room);
     return { ok: true, gameEnded: true };
   }
+
+  // When the Human's move bounces off the AI's Jester, the AI must sacrifice.
+  // Since the AI has no socket, resolve it server-side immediately.
+  if (result.state.phase === 'JESTER_SACRIFICE' &&
+      room.isAIGame &&
+      result.state.jesterSacrificeCtx?.sacrificingColor === 'BLACK') {
+    const targets = getValidSacrificeTargets(result.state);
+    if (targets.length > 0) {
+      room.gameState = applyJesterSacrifice(result.state, targets[0]);
+      if (room.gameState.phase === 'GAME_OVER') {
+        triggerAiTraining(room);
+        return { ok: true, gameEnded: true };
+      }
+    }
+    // currentTurn is now WHITE — caller will NOT queue an AI move (correct)
+    return { ok: true };
+  }
+
   if (result.state.phase === 'JESTER_SACRIFICE') return { ok: true };
 
   return { ok: true };
