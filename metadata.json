@@ -1,0 +1,6 @@
+{
+  "name": "Hess - Custom Chess Variant",
+  "description": "An original two-player chess variant with custom piece movements, King Swap, Jester bounce defense, and online or AI play.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
