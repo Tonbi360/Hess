@@ -1,0 +1,3 @@
+- [AI engine architecture](ai-engine.md) — hess-ai lib is Node-only (node:fs); requires @types/node in tsconfig with "types":["node"].
+- [Socket handler return pattern](socket-handler.md) — noImplicitReturns means `return socket.emit(...)` is a TS error; always split into `socket.emit(...); return;`.
+- [AI game flow](ai-game-flow.md) — AI always plays BLACK; setup auto-confirmed server-side in createAiRoom; AI moves triggered server-side 600ms after human move.
