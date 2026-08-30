@@ -1,0 +1,1190 @@
+Exactly. I think that gives us the right approach.
+
+For unresolved rules, Document 2 shouldn't simply say “TBD” and leave the engineer stranded. We'll distinguish:
+
+Canonical Rule — currently established.
+
+Provisional Rule — temporary implementation rule chosen so the rebuild has deterministic behavior.
+
+Open Question — requires future playtesting/design decision.
+
+Implementation Constraint — technical requirement that must hold regardless of future tuning.
+
+
+That way Hess can actually be rebuilt now, while preserving the ability to change those decisions later.
+
+And for terminology, I'll create a working Hess vocabulary based on the mechanics we've already established. I'll explicitly mark it as V3 terminology, not pretend you've personally finalized every word. If a term turns out to be bad, we rename it later.
+
+With that settled, here's the next document.
+
+
+---
+
+HESS — CANONICAL GAME RULES V3
+
+Document 2 — Core Rules Specification
+Status: Active / Living Canon
+Relationship: Child specification of HESS_REBUILD_SPECIFICATION_V3.md
+Purpose: Define the current playable rules of Hess independently of the existing codebase.
+
+
+---
+
+1. PURPOSE
+
+This document defines the current canonical rules of Hess.
+
+It is intended to serve as the primary rules reference for:
+
+the game engine,
+
+multiplayer validation,
+
+AI simulation,
+
+testing,
+
+UI/UX,
+
+tutorials,
+
+Piece Academy,
+
+and future rule development.
+
+
+This document describes what Hess does.
+
+It does not prescribe how the software must implement those rules.
+
+Detailed individual piece movement is intentionally separated into the future:
+
+> Document 3 — Pieces & Movement Specification
+
+
+
+Special mechanics will also receive deeper treatment in a dedicated document.
+
+
+---
+
+2. RULE STATUS SYSTEM
+
+Because Hess is still evolving, every rule may have one of four statuses.
+
+CANONICAL
+
+The rule is currently established and should be implemented as written.
+
+PROVISIONAL
+
+The rule is sufficiently understood to require deterministic implementation, but may be revised after playtesting.
+
+OPEN
+
+The intended behavior has not yet been completely resolved.
+
+DISCOVERED ISSUE
+
+The existing implementation exhibits behavior that conflicts with the intended rules or creates an unresolved edge case.
+
+An OPEN rule must not be silently guessed by the implementation.
+
+Instead, a Provisional Resolution should be chosen where necessary so that the rebuilt game remains playable.
+
+
+---
+
+3. CORE DESIGN PRINCIPLE
+
+Hess uses the chessboard and familiar strategic concepts as its foundation, but Hess is not conventional chess.
+
+Traditional chess assumptions must therefore not automatically apply.
+
+The game engine must always ask:
+
+> “What does Hess permit?”
+
+
+
+rather than:
+
+> “What would chess permit?”
+
+
+
+
+---
+
+4. THE BOARD
+
+Hess is played on an 8 × 8 board.
+
+The board consists of:
+
+8 files: a–h
+
+8 ranks: 1–8
+
+
+Squares are therefore identified using standard coordinate notation:
+
+a1 ... h1
+a2 ... h2
+...
+a8 ... h8
+
+The board contains a conceptual midfield separating the two halves.
+
+The midfield lies between:
+
+Rank 4
+───────
+MIDFIELD
+───────
+Rank 5
+
+The midfield is a rule boundary for specific mechanics.
+
+It does not automatically restrict every piece.
+
+
+---
+
+5. PLAYERS AND SIDES
+
+Hess has two opposing players:
+
+White
+
+Black
+
+
+Each player controls their own pieces.
+
+White traditionally occupies the lower side of the board, while Black occupies the upper side.
+
+However, Hess's setup mechanics can alter the initial arrangement.
+
+
+---
+
+6. STARTING SETUP
+
+Hess supports a hidden setup phase.
+
+Before the game begins, each player may arrange their permitted starting pieces according to the setup rules.
+
+The opponent must not be able to observe the player's private setup decisions during this phase.
+
+Important distinction
+
+The player's private setup state must remain private on the server.
+
+It is not sufficient for the client merely to visually hide it.
+
+The server must not unnecessarily transmit the opponent's hidden arrangement.
+
+
+---
+
+7. SETUP REVEAL
+
+The setup phase ends when both players have confirmed that they are ready.
+
+Conceptually:
+
+White chooses setup
+        ↓
+White Ready
+
+Black chooses setup
+        ↓
+Black Ready
+
+        ↓
+
+Both setups revealed
+        ↓
+Game begins
+
+The complete resulting starting position becomes visible when the rules permit the reveal.
+
+
+---
+
+8. TURN STRUCTURE
+
+Hess is turn-based.
+
+Players alternate turns unless a special mechanic explicitly causes the same player to retain the turn.
+
+A normal turn consists of:
+
+Player receives turn
+       ↓
+Player selects legal action
+       ↓
+Action is validated
+       ↓
+Action is resolved
+       ↓
+Special state checked
+       ↓
+Game-end conditions checked
+       ↓
+Next player receives turn
+
+A special action may interrupt this sequence.
+
+Therefore the engine must not assume:
+
+> Every completed action automatically changes the active player.
+
+
+
+This is particularly important for Jester interactions.
+
+
+---
+
+9. LEGAL ACTIONS
+
+A player may only perform an action permitted by the current game state.
+
+An action must satisfy:
+
+1. The player owns the acting piece.
+
+
+2. The piece is capable of performing that action.
+
+
+3. The destination or target is valid.
+
+
+4. The action does not violate Hess's relevant restrictions.
+
+
+5. Any required special state is active.
+
+
+6. Any required resource or opportunity exists.
+
+
+7. The resulting position is legal according to Hess.
+
+
+
+The server is authoritative for multiplayer games.
+
+
+---
+
+10. MOVEMENT
+
+Each Hess piece has its own movement rules.
+
+The complete movement definitions belong to the Piece Specification.
+
+In general:
+
+> A piece may move only according to its Hess movement pattern.
+
+
+
+A movement pattern may include:
+
+directional movement,
+
+limited movement,
+
+jumping,
+
+special movement,
+
+conditional movement,
+
+state-dependent movement,
+
+or movement that changes according to the piece's lifecycle.
+
+
+
+---
+
+11. CAPTURE
+
+A capture occurs when a player's piece legally moves onto a square occupied by an opposing piece and the rules permit that capture.
+
+The captured piece is removed from active play unless a special Hess mechanic modifies the outcome.
+
+Special interactions may cause:
+
+another piece to be sacrificed,
+
+an attacker to be displaced,
+
+a piece to transform,
+
+the turn to be retained,
+
+or another state transition.
+
+
+Therefore a capture must be processed through the game engine's state-transition system rather than being implemented as merely:
+
+remove(target)
+
+
+---
+
+12. FRIENDLY PIECES
+
+A player cannot normally land a moving piece on a square occupied by their own piece.
+
+A friendly piece may instead:
+
+block movement,
+
+prevent landing,
+
+become a special-action target,
+
+or participate in a mechanic such as King Swap or Jester sacrifice.
+
+
+Each special mechanic defines its own exceptions.
+
+
+---
+
+13. ATTACK
+
+An attack is a situation in which a piece has a legal capture opportunity against an opposing piece under the current game state.
+
+Attack detection must use Hess's movement rules.
+
+A square being geometrically reachable is not automatically sufficient if another Hess rule prevents the action.
+
+
+---
+
+14. KING AND KING SAFETY
+
+The King remains a strategically and mechanically significant piece.
+
+A player's King must not ordinarily be left in a position where it is subject to an illegal capture.
+
+However, Hess's rules introduce mechanics that differ from ordinary chess.
+
+The exact relationship between:
+
+check,
+
+King movement,
+
+King Swap,
+
+special attacks,
+
+and game-ending conditions
+
+
+must therefore be evaluated according to Hess rules rather than copied wholesale from chess.
+
+
+---
+
+15. KING SWAP
+
+King Swap is a fundamental Hess mechanic.
+
+A player may exchange the position of their King with an eligible friendly piece when the conditions for a King Swap are satisfied.
+
+Conceptually:
+
+King: e1
+Friendly piece: c2
+
+        ↓ King Swap
+
+King: c2
+Piece: e1
+
+The two pieces exchange positions.
+
+The mechanic is not merely an emergency escape mechanism.
+
+King Swap may serve multiple strategic purposes, including:
+
+escaping threats,
+
+repositioning the King,
+
+activating a piece,
+
+creating tactical opportunities,
+
+changing access to important squares,
+
+preparing future moves,
+
+and manipulating the board's geometry.
+
+
+
+---
+
+16. KING SWAP LEGALITY
+
+A King Swap must be validated as an actual game action.
+
+The engine must determine whether the resulting position is legal.
+
+A swap must not be treated as automatically legal simply because the destination contains a friendly piece.
+
+The rebuilt engine must explicitly test:
+
+the starting position,
+
+the destination,
+
+attacks affecting the resulting King position,
+
+relevant blockers,
+
+current game state,
+
+remaining swap availability,
+
+and any other applicable Hess restriction.
+
+
+
+---
+
+17. KING SWAP RESOURCE
+
+King Swaps are limited according to Hess's current rules.
+
+The player's remaining swap count must be part of the game state.
+
+The exact starting allocation and all consumption rules belong to the Special Mechanics specification.
+
+The implementation must not infer availability from the board alone.
+
+
+---
+
+18. PAWNS
+
+Pawns have directional movement.
+
+A pawn may have:
+
+normal forward movement,
+
+initial double movement,
+
+diagonal capture,
+
+and special interaction with King Swap.
+
+
+Pawn movement must depend on the pawn's relevant history/state where the rules require it.
+
+Important V3 requirement
+
+The engine must distinguish between:
+
+Pawn currently on starting rank
+
+and:
+
+Pawn has never moved
+
+if a future rule requires that distinction.
+
+A King Swap must not accidentally erase or invent movement history.
+
+
+---
+
+19. PAWN DOUBLE-MOVE — PROVISIONAL IMPLEMENTATION RULE
+
+The current implementation has exhibited cases where a pawn can incorrectly perform a two-square movement after it should no longer qualify.
+
+For V3:
+
+> A pawn's initial double movement must be tied to its actual starting-state eligibility, not merely to its current board coordinate.
+
+
+
+A pawn that has lost its original eligibility must not regain it simply because it occupies a square from which a double movement would geometrically fit.
+
+King Swap interaction
+
+The exact question of whether a never-moved pawn that changes squares through King Swap retains its initial double-step eligibility remains a Hess design question.
+
+Until explicitly resolved:
+
+> Provisional rule: movement history belongs to the pawn itself, not the square it occupies.
+
+
+
+Therefore, moving a pawn through a King Swap does not by itself mark the pawn as having made a normal pawn move.
+
+This provisional rule should be tested extensively before being declared permanent.
+
+
+---
+
+20. MIDFIELD AND PAWNS
+
+The midfield exists as a special spatial boundary in Hess.
+
+It must not automatically be interpreted as a general pawn-movement barrier.
+
+Unless another rule explicitly states otherwise:
+
+> The midfield does not invalidate a pawn's ordinary directional movement merely because the pawn crosses it.
+
+
+
+Any special interaction involving the midfield must be explicitly defined.
+
+
+---
+
+21. JESTER
+
+The Jester is a lifecycle-based Hess piece rather than simply another static piece.
+
+Its behavior may change according to:
+
+its direction,
+
+its position,
+
+whether it has reached its home rank,
+
+and its interaction with enemy pieces.
+
+
+The Jester therefore requires persistent state beyond its board coordinate.
+
+Detailed Jester movement belongs to Document 3.
+
+
+---
+
+22. JESTER LIFECYCLE
+
+The current conceptual lifecycle is:
+
+Pawn
+ ↓
+Promotion
+ ↓
+Jester
+ ↓
+Journey toward home
+ ↓
+Home-rank decision
+ ↓
+Remain Jester / Transform
+ ↓
+Potential return journey
+ ↓
+Potential Returning Pawn state
+
+This lifecycle is one of Hess's defining mechanics.
+
+The implementation must not reduce the Jester to an ordinary promoted piece.
+
+
+---
+
+23. JESTER SACRIFICE
+
+When an enemy attack triggers the Jester's special deflection/sacrifice interaction, the defending player may be required to sacrifice an eligible friendly piece.
+
+The sacrificed piece is removed.
+
+The attacking piece may then be deflected/bounced back according to Hess's rules.
+
+This interaction may also affect turn ownership.
+
+
+---
+
+24. JESTER SACRIFICE STATE
+
+Jester sacrifice is treated as an explicit intermediate game state.
+
+Conceptually:
+
+Enemy attacks Jester
+        ↓
+Jester interaction triggered
+        ↓
+JESTER_SACRIFICE
+        ↓
+Player chooses sacrifice
+        ↓
+Sacrifice resolved
+        ↓
+Attacker deflected
+        ↓
+Turn determined
+
+The engine must not attempt to compress this into an ordinary capture.
+
+
+---
+
+25. NO-ELIGIBLE-SACRIFICE CONDITION
+
+A critical edge case occurs when the Jester interaction requires a sacrifice but the player has no eligible piece available.
+
+The game must never enter an unrecoverable selection state.
+
+Provisional V3 rule
+
+If no valid sacrifice exists:
+
+1. The sacrifice selection state is skipped.
+
+
+2. The engine resolves the Jester interaction according to the no-sacrifice outcome.
+
+
+3. The game continues normally according to the resulting state.
+
+
+
+The exact final resolution remains subject to further rule confirmation.
+
+The important invariant is:
+
+> No legal position may permanently freeze because the UI expects an impossible sacrifice choice.
+
+
+
+
+---
+
+26. QUEEN
+
+The Queen has special spatial restrictions that distinguish her from a conventional chess Queen.
+
+The Queen is associated with the player's own half of the board and the midfield.
+
+The Queen's detailed movement and raid rules belong to Document 3 and the Special Mechanics specification.
+
+
+---
+
+27. QUEEN MIDFIELD RESTRICTION
+
+Under normal conditions, the Queen cannot freely cross the midfield.
+
+The midfield therefore functions as a goalkeeper boundary for the Queen.
+
+The restriction applies specifically to the Queen.
+
+It must not be generalized to unrelated pieces.
+
+
+---
+
+28. QUEEN DESPERATION RAID
+
+The Queen possesses a special raid mechanic that becomes available under a specific low-material condition.
+
+The current documented concept is:
+
+Only King + Queen remain
+        ↓
+Queen Raid becomes available
+        ↓
+Queen enters enemy territory
+        ↓
+Limited raid moves
+        ↓
+Queen returns to launch position
+
+The Queen's raid therefore represents a temporary exception to her normal midfield restriction.
+
+The exact trigger conditions, move counting, launch-state preservation, and interruption behavior must be treated as explicit game state rather than inferred from board coordinates.
+
+
+---
+
+29. SPECIAL PIECES
+
+Hess contains pieces whose movement differs substantially from conventional chess.
+
+These currently include:
+
+King
+
+Queen
+
+Missile Rook
+
+Staircase Bishop
+
+T-Shape Knight
+
+Pawn
+
+Jester
+
+
+The complete movement specifications are intentionally delegated to Document 3.
+
+
+---
+
+30. SPECIAL MOVEMENT PRINCIPLE
+
+A piece's movement must be calculated from board coordinates, not fragile linear-array assumptions.
+
+For example, a movement described as:
+
+> “four squares horizontally”
+
+
+
+must mean exactly four columns on the same rank.
+
+It must never accidentally mean:
+
+> “add four to an array index.”
+
+
+
+This principle is particularly important for pieces such as the Missile Rook.
+
+
+---
+
+31. PROMOTION
+
+A pawn reaching its relevant promotion condition may transform according to Hess's promotion rules.
+
+Promotion may produce a Jester rather than following conventional chess promotion behavior.
+
+The exact transformation rules belong to Document 3 and the Jester specification.
+
+
+---
+
+32. PIECE CAPS
+
+Hess may restrict the number of certain pieces a player can possess.
+
+These caps must be enforced by the engine rather than merely by the interface.
+
+This becomes particularly important when a Jester reaches its home rank and offers a transformation choice.
+
+The UI may display only legal choices, but the server/engine must independently validate them.
+
+
+---
+
+33. SPECIAL GAME STATES
+
+Hess contains situations where a player is not simply choosing an ordinary movement.
+
+The engine must support explicit states such as:
+
+SETUP
+PLAYING
+JESTER_SACRIFICE
+JESTER_HOME_CHOICE
+QUEEN_RAID
+GAME_OVER
+
+Additional states may be introduced where required.
+
+A state should exist whenever the rules require the player to make a decision before the ordinary turn can continue.
+
+
+---
+
+34. TURN RETENTION
+
+Not every Hess action necessarily passes control to the opponent.
+
+Some special mechanics can cause the current player to retain the turn.
+
+This must be explicitly represented by the engine.
+
+AI search must also simulate this correctly.
+
+The AI must never assume:
+
+every move → opponent turn
+
+without examining the resulting game state.
+
+
+---
+
+35. DESPERATION STALE
+
+Hess has a special game-ending condition referred to as Desperation Stale.
+
+The concept is related to situations in which the King is under an unavoidable threat and normal defensive resources have been exhausted.
+
+The engine must consider more than King escape squares.
+
+Where applicable, it must also consider:
+
+capturing the attacking piece,
+
+blocking the attack,
+
+and available Hess-specific defensive mechanisms.
+
+
+
+---
+
+36. BLOCKABLE ATTACKS
+
+A blockable attack must be evaluated for available defensive interpositions.
+
+This applies to relevant:
+
+vertical attacks,
+
+horizontal attacks,
+
+diagonal attacks.
+
+
+If a legal block exists, the position must not incorrectly be declared lost.
+
+This is an explicit correction to the previous implementation.
+
+
+---
+
+37. STALEMATE
+
+Hess must distinguish between:
+
+A player having no legal ordinary movement
+
+and
+
+The player having no legal action whatsoever.
+
+A player who has no legal movement but still has a legal Hess-specific action must not automatically be declared stalemated.
+
+Examples may include:
+
+an available King Swap,
+
+an available pawn interaction,
+
+or another rule-defined action.
+
+
+Therefore stalemate detection must operate on all legal actions, not merely ordinary piece movement.
+
+
+---
+
+38. STALEMATE DRAW
+
+Provisional canonical behavior
+
+If:
+
+the current player has no legal actions,
+
+the King is not under a winning attack,
+
+and no special action is available,
+
+
+the game ends in a draw.
+
+The exact distinction between ordinary stalemate and Desperation Stale remains part of the dedicated game-end specification.
+
+
+---
+
+39. TWO-KING ENDGAME
+
+When only the two Kings remain:
+
+White King
++
+Black King
+
+Hess enters a special countdown state.
+
+The current documented value is:
+
+> 30 half-moves
+
+
+
+Each completed King move reduces the remaining count.
+
+If the counter reaches zero without the required decisive event:
+
+> The game is drawn.
+
+
+
+
+---
+
+40. COUNTDOWN STATE
+
+The countdown must be part of the authoritative game state.
+
+It must not exist solely as a visual UI timer.
+
+The client displays the value received from the authoritative state.
+
+
+---
+
+41. REPETITION
+
+Repeated positions can occur naturally in Hess because of:
+
+King movement,
+
+unusual piece mobility,
+
+King Swap,
+
+special movement patterns,
+
+defensive play,
+
+and the absence of a conventional chess-style timer.
+
+
+Repetition handling therefore requires explicit consideration.
+
+The AI should discourage meaningless repetition where it has a better alternative.
+
+The exact official game-wide repetition rule remains to be finalized.
+
+Until then:
+
+> AI repetition avoidance is an evaluation concern, not automatically a game-ending rule.
+
+
+
+
+---
+
+42. NO TIMER
+
+Hess currently does not require a chess-style move clock.
+
+A player is not defeated merely because they take a long time to decide.
+
+The game therefore relies on:
+
+rule-based game endings,
+
+special countdown mechanics where explicitly defined,
+
+and future platform-level policies if time controls are eventually introduced.
+
+
+A future competitive mode may introduce a timer without changing the core Hess rules.
+
+
+---
+
+43. GAME END
+
+The game may end through a Hess-defined decisive condition or draw condition.
+
+The engine must explicitly determine:
+
+ONGOING
+DRAW
+PLAYER 1 WIN
+PLAYER 2 WIN
+find another legal move.
+44. NO-LEGAL-MOVE SAFETY
+A fundamental engine invariant is:
+Every reachable game state must have a defined outcome or a valid next action.
+If a player has no legal actions, the engine must resolve the position instead of leaving the game waiting indefinitely.
+This prevents the class of freezes observed in earlier implementations.
+45. ILLEGAL ACTION HANDLING
+If a client requests an illegal action:
+the server rejects it,
+the authoritative game state remains unchanged,
+the client receives an appropriate error/result,
+and the game remains playable.
+Illegal client input must never corrupt the game state.
+46. HIDDEN INFORMATION SECURITY
+Private information must remain private at the networking layer.
+In particular:
+hidden setups,
+private player credentials,
+internal AI information,
+and other secret state
+must not be transmitted to an opposing player unless the rules require disclosure.
+Visual hiding is not sufficient.
+47. RULES VS UI
+The UI must communicate the rules but must not define them.
+For example:
+UI says:
+"These squares are legal."
+
+Engine says:
+"These squares are legal."
+If they disagree, the engine wins.
+The long-term objective is to make disagreement impossible by deriving UI movement information from the same authoritative rule system.
+48. RULES VS AI
+The AI must use the same canonical rules engine.
+It must not maintain an independent interpretation of Hess.
+Conceptually:
+Human Move
+     ↓
+Hess Engine
+
+AI Move
+     ↓
+Hess Engine
+The AI may evaluate positions differently from a human, but it must never operate under a different ruleset.
+49. PROVISIONAL RULE HANDLING
+When an unresolved rule prevents implementation from progressing, the development team should:
+Identify the ambiguity.
+Record it.
+Define a provisional behavior.
+Implement it consistently.
+Add tests.
+Playtest it.
+Revisit the decision.
+A provisional rule should therefore be easy to replace.
+50. RULE DISCOVERY
+New discoveries during development or gameplay should not automatically modify the engine.
+Instead:
+Discovery
+   ↓
+Question
+   ↓
+Does current rule already answer it?
+   │
+   ├── YES → Implement/test accordingly
+   │
+   └── NO
+         ↓
+     Design discussion
+         ↓
+     Provisional or Canonical decision
+         ↓
+     Update specification
+         ↓
+     Update engine/tests
+This prevents bugs from becoming accidental rules.
+51. HESS TERMINOLOGY — V3 WORKING VOCABULARY
+The following terminology is introduced as a working vocabulary for the project.
+These names may be refined later.
+Move
+A standard legal movement action performed by a piece.
+Capture
+A legal action that removes an opposing piece.
+Swap
+A special action exchanging the positions of two eligible friendly pieces.
+King Swap
+A Swap involving the player's King and another eligible friendly piece.
+Sacrifice
+Voluntarily or mandatorily removing one's own piece as part of a Hess mechanic.
+Deflection / Bounce-Back
+A special interaction in which an attacking piece is forced away from its current position following a Jester interaction.
+Home Rank
+The rank associated with the Jester's return destination.
+Midfield
+The boundary between ranks 4 and 5.
+Raid
+A temporary Queen state allowing her to operate beyond her normal territory.
+Launchpad
+The Queen's stored pre-raid position to which she returns after completing the raid.
+Special State
+A game state requiring rules beyond ordinary movement.
+Legal Action
+Any action currently permitted by Hess, including special actions.
+These terms are project vocabulary, not necessarily the final player-facing wording.
+52. RULES THAT REQUIRE FURTHER VALIDATION
+The following areas are intentionally not treated as permanently frozen:
+Pawn + King Swap
+Whether a never-moved pawn retains double-step eligibility after being swapped with the King.
+Current provisional rule: movement history belongs to the pawn.
+Jester No-Sacrifice Resolution
+The precise outcome when a Jester is attacked but the owner has no eligible sacrifice.
+Current invariant: the game must not freeze.
+Jester Home Behavior
+The complete movement and state behavior after reaching home rank, including the exact transition between Jester states and Returning Pawn behavior.
+Queen Raid
+Exact trigger, interruption, counting, return behavior, and interactions with other mechanics.
+Desperation Stale
+The complete relationship between:
+check,
+blocking,
+capturing,
+King Swap,
+and other defensive actions.
+Repetition
+Whether repeated positions eventually cause an official draw, and if so, under what exact conditions.
+53. ENGINE INVARIANTS
+Regardless of future rule refinements, the V3 engine must maintain these invariants:
+Invariant 1
+No illegal move may alter authoritative state.
+Invariant 2
+No legal game state may permanently freeze.
+Invariant 3
+The server and AI must use the same rules engine.
+Invariant 4
+Special mechanics must have explicit state transitions.
+Invariant 5
+Piece history required by a rule must be preserved.
+Invariant 6
+Hidden information must remain hidden at the networking layer.
+Invariant 7
+The UI must never be the ultimate authority on legality.
+Invariant 8
+Future rule changes must be possible without replacing the entire game engine.
+54. IMPLEMENTATION INTERPRETATION
+The implementation team should read this document as:
+The current behavioral contract of Hess.
+If existing code disagrees with this document, the disagreement must be investigated.
+The solution is not automatically to change the document to match the code.
+Instead determine:
+Is the code wrong?
+Is the document wrong?
+Is the rule ambiguous?
+Is a new rule needed?
+Only then should the implementation change.
+55. FINAL RULE PRINCIPLE
+Hess is intentionally more open-ended than an ancient, decades-refined ruleset.
+That is not a weakness of the project.
+It is part of its current stage.
+The objective of V3 is therefore not to pretend that every possible interaction has already been discovered.
+The objective is to create a rules system that is:
+precise where known,
+deterministic where necessary,
+honest about uncertainty,
+testable under unusual conditions,
+and
+flexible enough to evolve.
+Hess should be stable enough to play, but alive enough to discover.
+END OF DOCUMENT 2 — HESS CANONICAL GAME RULES V3
+A game must never remain in an undefined state simply because the engine cannot 
