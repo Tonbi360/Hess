@@ -1,0 +1,1134 @@
+HESS — REBUILD SPECIFICATION V3
+
+Document 1 — Master Rebuild Specification
+Status: Active / Living Specification
+Purpose: Establish the foundation for the complete Hess rebuild and serve as the parent reference for all subsequent V3 documents.
+
+
+---
+
+1. DOCUMENT PURPOSE
+
+This document defines the V3 rebuild direction for Hess.
+
+Hess is not being treated as a minor revision of the existing implementation. The current repository is an important reference and contains substantial working functionality, but accumulated architectural duplication, rule inconsistencies, incomplete mechanics, AI limitations, UI/UX shortcomings, and insufficient testing have made incremental patching increasingly unreliable.
+
+The V3 effort therefore treats the existing application as:
+
+> A valuable prototype and source of discovered behavior — not the architecture that must be preserved.
+
+
+
+The objective is to rebuild Hess into a coherent, maintainable, extensible game system while preserving and accurately implementing the current intended rules.
+
+This document does not freeze Hess permanently.
+
+Hess is a young game and its rules may continue to evolve through playtesting, discoveries, edge cases, balancing, or new ideas. V3 should therefore implement the current canonical rules while keeping the underlying architecture flexible enough to accommodate future changes.
+
+
+---
+
+2. THE V3 PRINCIPLE
+
+The rebuild follows this hierarchy:
+
+UNDERSTAND
+    ↓
+DEFINE
+    ↓
+BUILD
+    ↓
+TEST
+    ↓
+PLAY
+    ↓
+DISCOVER
+    ↓
+REFINE
+    ↺
+
+The goal is not merely to make the existing application work again.
+
+The goal is to create a system where:
+
+rules can be understood clearly,
+
+rules can be implemented consistently,
+
+mechanics can interact safely,
+
+unusual positions can be tested,
+
+players can learn Hess naturally,
+
+AI can reason about Hess strategically,
+
+and future discoveries can be incorporated without architectural destruction.
+
+
+
+---
+
+3. WHAT HESS IS
+
+Hess is a chess-derived strategy game with its own rules, pieces, mechanics, and strategic identity.
+
+It should not be implemented as conventional chess with several modifications layered on top.
+
+The board and some familiar concepts provide a foundation, but Hess introduces enough structural differences that its gameplay must be treated as its own system.
+
+These differences include, among other things:
+
+unconventional piece movement,
+
+unusual piece interactions,
+
+hidden starting arrangements,
+
+King Swap mechanics,
+
+Jester mechanics and lifecycle,
+
+Queen restrictions and special raid behavior,
+
+special game-ending conditions,
+
+changing positional importance,
+
+unusual endgames,
+
+and strategic decisions that cannot be evaluated reliably using ordinary chess assumptions.
+
+
+Therefore:
+
+> Hess rules must be authoritative in their own right.
+
+
+
+Traditional chess concepts may provide useful inspiration, but they must never silently override a Hess rule.
+
+
+---
+
+4. CURRENT RULE STATUS
+
+The current Hess rules are considered:
+
+CANONICAL BUT NOT IMMUTABLE
+
+The current documented rules should be implemented as the intended ruleset.
+
+However, the rules remain open to refinement.
+
+A future rule change may originate from:
+
+discovering an unintended edge case,
+
+observing an interesting emergent interaction,
+
+resolving an ambiguity,
+
+balancing gameplay,
+
+improving strategic depth,
+
+discovering an exploit,
+
+or introducing a new mechanic.
+
+
+When this happens, the change should be deliberately documented rather than accidentally emerging from implementation behavior.
+
+Critical distinction
+
+The following must never automatically be treated as the same thing:
+
+Current Code
+      ≠
+Intended Rule
+      ≠
+Observed Behavior
+
+For example:
+
+> If the current engine permits a pawn to make an illegal double move, that does not make the double move a Hess rule.
+
+
+
+It is an implementation defect unless the rule specification explicitly says otherwise.
+
+
+---
+
+5. THREE-LAYER ARCHITECTURE
+
+All V3 design decisions should be separated into three conceptual layers.
+
+Layer A — RULES
+
+Defines what is legally possible.
+
+Examples:
+
+movement,
+
+captures,
+
+promotion,
+
+King Swap,
+
+Jester behavior,
+
+Queen restrictions,
+
+game-ending conditions,
+
+turn ownership,
+
+special states.
+
+
+The rules layer must be deterministic and authoritative.
+
+
+---
+
+Layer B — GAME DESIGN
+
+Defines how Hess should feel and how players interact with it.
+
+Examples:
+
+UI/UX,
+
+tutorials,
+
+Piece Academy,
+
+contextual explanations,
+
+visual feedback,
+
+onboarding,
+
+difficulty progression,
+
+game presentation,
+
+player feedback,
+
+accessibility.
+
+
+The design layer should communicate the rules without changing them.
+
+
+---
+
+Layer C — IMPLEMENTATION
+
+Defines how the software realizes the rules and design.
+
+Examples:
+
+game engine,
+
+state machine,
+
+server,
+
+multiplayer protocol,
+
+persistence,
+
+AI,
+
+rendering,
+
+testing,
+
+build system.
+
+
+Implementation must conform to the rules and design rather than becoming the accidental source of truth.
+
+
+---
+
+6. SOURCE-OF-TRUTH HIERARCHY
+
+During the rebuild, conflicting information should be resolved using the following priority:
+
+1. Current Canonical Hess Rules
+        ↓
+2. Explicit V3 Design Decisions
+        ↓
+3. Existing Hess Documentation
+        ↓
+4. Existing Repository Implementation
+        ↓
+5. Historical Game Logs
+
+However, this hierarchy does not mean old material should simply be ignored.
+
+The old repository and documents are valuable because they contain:
+
+working implementations,
+
+previous design decisions,
+
+discovered bugs,
+
+existing UI,
+
+existing AI,
+
+networking logic,
+
+and real examples of Hess gameplay.
+
+
+They should be studied before replacing functionality.
+
+But existing code should never be preserved merely because it already exists.
+
+
+---
+
+7. THE EXISTING REPOSITORY
+
+The current Hess repository should be treated as the prototype/reference implementation.
+
+The rebuild process should first determine:
+
+What works?
+
+Preserve or reproduce useful functionality where appropriate.
+
+What is incomplete?
+
+Complete it according to the canonical rules.
+
+What is incorrect?
+
+Replace it rather than patching indefinitely.
+
+What is duplicated?
+
+Consolidate it.
+
+What is obsolete?
+
+Remove it.
+
+What is unclear?
+
+Investigate before changing it.
+
+What is potentially useful for future Hess development?
+
+Preserve the knowledge, even if the implementation itself is discarded.
+
+
+---
+
+8. REBUILD RATHER THAN PATCH
+
+The V3 rebuild should avoid the following pattern:
+
+Bug
+ ↓
+Patch
+ ↓
+New edge case
+ ↓
+Another patch
+ ↓
+State-machine exception
+ ↓
+Another special case
+ ↓
+Frontend disagrees with server
+ ↓
+Patch both
+ ↓
+AI breaks
+ ↓
+Patch AI
+ ↓
+New interaction breaks everything
+
+Instead:
+
+Rule
+ ↓
+Canonical representation
+ ↓
+Authoritative engine
+ ↓
+Validated state transition
+ ↓
+Clients render resulting state
+
+This is especially important because Hess contains mechanics that interact with one another.
+
+A rule should not be implemented as an isolated special case if it fundamentally changes the game's state.
+
+
+---
+
+9. AUTHORITATIVE GAME ENGINE
+
+V3 should maintain one authoritative Hess rules engine.
+
+The engine should be responsible for determining:
+
+legal movement,
+
+legal captures,
+
+special actions,
+
+resulting board state,
+
+turn ownership,
+
+special intermediate states,
+
+game-ending conditions,
+
+and other rule-dependent transitions.
+
+
+The frontend should not maintain an independent competing rules implementation.
+
+Instead:
+
+┌───────────────┐
+                 │ HESS ENGINE   │
+                 │ Authoritative │
+                 └───────┬───────┘
+                         │
+             ┌───────────┴───────────┐
+             ↓                       ↓
+       Multiplayer Server          AI
+             │                       │
+             ↓                       ↓
+          Client UI              Analysis
+
+The interface may perform lightweight prediction for responsiveness, but the authoritative rules must remain centralized.
+
+
+---
+
+10. STATE IS MORE THAN A BOARD
+
+A major V3 architectural principle is that Hess cannot be represented purely as:
+
+piece positions + current player
+
+Some Hess mechanics depend on history and state.
+
+The engine must therefore explicitly represent any information required to determine future legality.
+
+Potential state categories include:
+
+board position,
+
+active player,
+
+piece identity,
+
+piece movement history,
+
+pawn starting-state information,
+
+King Swap availability,
+
+Jester direction/lifecycle state,
+
+Queen raid state,
+
+sacrifice state,
+
+special temporary states,
+
+repetition history where relevant,
+
+endgame counters,
+
+setup state,
+
+hidden setup information,
+
+and other rule-specific metadata.
+
+
+This is particularly important for cases where a piece's current square alone cannot determine what it is allowed to do.
+
+
+---
+
+11. HESS IS AN INTERACTION SYSTEM
+
+V3 must not treat every rule as an isolated movement rule.
+
+The engine should support sequences such as:
+
+Move
+ ↓
+Capture
+ ↓
+Special condition triggered
+ ↓
+Choice required
+ ↓
+Temporary state entered
+ ↓
+Player decision
+ ↓
+Resolution
+ ↓
+Turn ownership determined
+ ↓
+New game state
+
+This is particularly important for mechanics such as:
+
+Jester attacks,
+
+Jester sacrifice,
+
+Jester bounce-back,
+
+King Swap,
+
+Queen raid,
+
+promotion,
+
+special game-ending conditions.
+
+
+A special mechanic may alter who gets to move next, not merely what appears on the board.
+
+
+---
+
+12. EDGE CASES ARE FIRST-CLASS GAMEPLAY
+
+Hess should be tested against unusual situations rather than only conventional starting games.
+
+Important test categories include:
+
+unusual starting arrangements,
+
+Kings and Queens placed at extreme positions,
+
+pieces placed on unexpected ranks,
+
+immediate tactical interactions,
+
+blocked special mechanics,
+
+impossible-looking but legal positions,
+
+positions with very little material,
+
+multiple simultaneous special opportunities,
+
+repeated positions,
+
+unusual King Swap opportunities,
+
+Jester edge cases,
+
+pawn history edge cases,
+
+and endgames that differ radically from ordinary chess.
+
+
+The engine should not assume that players will behave conventionally.
+
+> If the rules permit a position, the engine must be prepared to handle it.
+
+
+
+
+---
+
+13. PLAYED GAMES AS DEVELOPMENT EVIDENCE
+
+Historical Hess games should be retained as observational evidence, not as immutable expected outcomes.
+
+Game logs are valuable because they expose interactions that isolated rule testing may miss.
+
+However, the available game logs are not large enough to constitute statistical gameplay data.
+
+Therefore:
+
+Game logs should be used to:
+
+identify bugs,
+
+discover unexpected interactions,
+
+generate regression scenarios,
+
+identify unclear rules,
+
+inspect AI behavior,
+
+discover interesting strategic patterns.
+
+
+Game logs should NOT be used to:
+
+define the rules by themselves,
+
+assume every observed behavior was intentional,
+
+preserve old gameplay outcomes,
+
+or constrain the rebuilt game unnecessarily.
+
+
+A rebuilt Hess game may produce a completely different result from an old game because the old implementation contained defects.
+
+That is acceptable.
+
+
+---
+
+14. THE AI IS A CORE SYSTEM
+
+The AI must not be treated as a final feature added after the game engine is complete.
+
+Hess's strategic complexity makes the AI one of the central systems of the project.
+
+The AI must eventually reason about more than conventional material values.
+
+Its evaluation may need to consider:
+
+material,
+
+mobility,
+
+positional control,
+
+tactical threats,
+
+future promotion potential,
+
+King Swap opportunities,
+
+Jester opportunities,
+
+Jester sacrifice possibilities,
+
+Queen restrictions,
+
+Queen raid opportunities,
+
+Royal safety,
+
+special-state consequences,
+
+forced sequences,
+
+repetition,
+
+endgame conditions,
+
+and contextual piece value.
+
+
+A piece's value should therefore be considered dynamic rather than universally fixed.
+
+For example:
+
+Piece Value =
+Material Value
++ Positional Value
++ Mobility
++ Tactical Value
++ Special-Mechanic Value
++ Future Potential
++ Game-State Context
+
+The exact evaluation model belongs to the dedicated AI specification.
+
+
+---
+
+15. AI SHOULD UNDERSTAND HESS, NOT JUST MOVE IN HESS
+
+A basic engine can technically produce legal Hess moves.
+
+That is not sufficient.
+
+The desired progression is:
+
+Level 0
+Legal Move Generator
+
+        ↓
+
+Level 1
+Basic Strategic Evaluation
+
+        ↓
+
+Level 2
+Tactical Hess Evaluation
+
+        ↓
+
+Level 3
+Special-Mechanic Awareness
+
+        ↓
+
+Level 4
+Multi-step Hess Planning
+
+        ↓
+
+Level 5
+Strong Competitive Hess AI
+
+The AI should eventually recognize that an apparently strange move may have strategic value because of a future interaction.
+
+The implementation should therefore leave room for deeper search, better evaluation, transposition handling, move ordering, simulation of special states, and future learning approaches.
+
+
+---
+
+16. AI TRANSPARENCY
+
+Because Hess can produce decisions that are difficult for humans to understand, future versions should support an AI analysis/explanation layer.
+
+This does not require exposing the AI's internal chain-of-thought.
+
+Instead, the system can communicate useful strategic reasons such as:
+
+> “This move protects a promotion threat.”
+
+
+
+> “This sacrifice creates a King Swap opportunity.”
+
+
+
+> “The alternative allows your Jester to be trapped.”
+
+
+
+> “This move reduces your opponent's mobility.”
+
+
+
+> “The AI avoided the repetition because it produces no positional progress.”
+
+
+
+The objective is to help humans develop Hess intuition.
+
+
+---
+
+17. TESTING PHILOSOPHY
+
+V3 testing must operate at multiple levels.
+
+Level 1 — Rule Tests
+
+Verify individual rules.
+
+Examples:
+
+movement,
+
+capture,
+
+pawn movement,
+
+special movement,
+
+promotion.
+
+
+Level 2 — Interaction Tests
+
+Verify combinations of rules.
+
+Examples:
+
+Jester + capture,
+
+Jester + sacrifice,
+
+King Swap + check,
+
+pawn + King Swap,
+
+promotion + Jester lifecycle.
+
+
+Level 3 — State Tests
+
+Verify complex transitions.
+
+Examples:
+
+temporary states,
+
+turn retention,
+
+special counters,
+
+game-end states.
+
+
+Level 4 — Scenario Tests
+
+Construct complete board positions designed to test unusual situations.
+
+Level 5 — Game Simulation
+
+Run complete games using human-like and AI-generated play.
+
+Level 6 — Real Playtesting
+
+Use actual human games to discover emergent problems.
+
+
+---
+
+18. REGRESSION TESTING
+
+Every significant discovered bug should eventually become a regression scenario.
+
+For example:
+
+Bug discovered
+      ↓
+Reproduce
+      ↓
+Determine intended rule
+      ↓
+Fix engine
+      ↓
+Create permanent regression test
+
+This prevents the same defect from returning during later development.
+
+
+---
+
+19. UI/UX PHILOSOPHY
+
+The Hess interface should not force players to understand the entire game before playing.
+
+Instead:
+
+> Teach the simple rules immediately and reveal complexity contextually.
+
+
+
+The interface should prioritize:
+
+clarity,
+
+responsiveness,
+
+visual feedback,
+
+discoverability,
+
+low cognitive clutter,
+
+strong board visibility,
+
+touch-friendly interaction,
+
+and elegant presentation.
+
+
+Complex mechanics should be available when needed without permanently occupying the player's attention.
+
+This will later be expanded into the dedicated UI/UX specification.
+
+
+---
+
+20. THE HESS LEARNING MODEL
+
+The rebuilt game should support multiple learning paths:
+
+See a Piece
+     ↓
+Interact With It
+     ↓
+Understand Its Movement
+     ↓
+Learn Its Special Interaction
+     ↓
+Encounter It In Play
+     ↓
+Understand Its Strategic Use
+
+This is why the Piece Academy, Rules Playground, and contextual tutorials are not cosmetic features.
+
+They are part of Hess's onboarding architecture.
+
+
+---
+
+21. EXPERIMENTATION SHOULD BE EASY
+
+Because Hess is still evolving, development should support experimentation.
+
+The project should make it reasonably easy to:
+
+construct arbitrary positions,
+
+test individual mechanics,
+
+replay situations,
+
+inspect legal moves,
+
+test state transitions,
+
+compare AI choices,
+
+create new Academy scenarios,
+
+add regression tests,
+
+and modify rules deliberately.
+
+
+The eventual development environment should function partly as a:
+
+> Hess laboratory.
+
+
+
+This is more appropriate than treating Hess as a finished game whose rules can never change.
+
+
+---
+
+22. MULTIPLAYER SECURITY
+
+Hess multiplayer must treat the server as authoritative.
+
+Clients must not be trusted to decide:
+
+whether a move is legal,
+
+whose turn it is,
+
+whether a special action is available,
+
+whether a player has permission to perform an action,
+
+or whether a game-ending condition has occurred.
+
+
+Sensitive credentials must never be broadcast unnecessarily.
+
+Private setup information must remain private until the rules permit revelation.
+
+Socket payloads should be validated at the boundary.
+
+Authentication/access control should be introduced at an appropriate level for the final product rather than relying purely on client-provided identity.
+
+
+---
+
+23. HIDDEN INFORMATION
+
+Any Hess mechanic involving hidden information must be treated as an actual security boundary.
+
+The client should not receive information that the player is not supposed to know merely because the UI happens to hide it.
+
+For example:
+
+UI hiding information
+        ≠
+Server hiding information
+
+The server must maintain the true private state and reveal it only when the game rules permit.
+
+
+---
+
+24. PERFORMANCE
+
+The rebuild must account for the fact that Hess AI search can be computationally expensive.
+
+AI computation should not unnecessarily block:
+
+multiplayer networking,
+
+active games,
+
+UI responsiveness,
+
+or other server operations.
+
+
+The architecture should therefore allow AI computation to be isolated, scheduled, limited, or moved to an appropriate execution context as the AI becomes stronger.
+
+
+---
+
+25. CLEAN ARCHITECTURE TARGET
+
+The V3 target architecture should conceptually resemble:
+
+HESS
+│
+├── Rules / Game Engine
+│   ├── Board
+│   ├── Pieces
+│   ├── Move Generation
+│   ├── State Transitions
+│   ├── Special Mechanics
+│   └── Game End
+│
+├── AI
+│   ├── Search
+│   ├── Evaluation
+│   ├── Simulation
+│   ├── Training
+│   └── Analysis
+│
+├── Multiplayer
+│   ├── Rooms
+│   ├── Sessions
+│   ├── Hidden State
+│   ├── Networking
+│   └── Reconnection
+│
+├── Client
+│   ├── Board
+│   ├── Game UI
+│   ├── Setup
+│   ├── Academy
+│   ├── Tutorials
+│   └── Analysis
+│
+└── Testing
+    ├── Unit
+    ├── Interaction
+    ├── Scenario
+    ├── Integration
+    └── Regression
+
+The exact technology and directory structure may differ after repository inspection.
+
+This is an architectural target, not a command to blindly reproduce these folders.
+
+
+---
+
+26. DOCUMENT HIERARCHY FOR V3
+
+The V3 documentation set should progressively define Hess from foundation to implementation.
+
+Recommended hierarchy:
+
+DOCUMENT 1
+HESS REBUILD SPECIFICATION
+        │
+        ├── DOCUMENT 2
+        │   CANONICAL RULES
+        │
+        ├── DOCUMENT 3
+        │   PIECES & MOVEMENT SPECIFICATION
+        │
+        ├── DOCUMENT 4
+        │   SPECIAL MECHANICS & GAME STATES
+        │
+        ├── DOCUMENT 5
+        │   UI / UX DESIGN
+        │
+        ├── DOCUMENT 6
+        │   RULES PLAYGROUND & PIECE ACADEMY
+        │
+        ├── DOCUMENT 7
+        │   HESS AI SPECIFICATION
+        │
+        ├── DOCUMENT 8
+        │   TESTING & EDGE-CASE SPECIFICATION
+        │
+        └── DOCUMENT 9
+            REBUILD / IMPLEMENTATION PLAN
+
+Additional documents may be created if the complexity warrants them.
+
+
+---
+
+27. DEFINITION OF SUCCESS
+
+The V3 rebuild should not be considered successful merely because:
+
+the application starts,
+
+the board renders,
+
+pieces move,
+
+or a game can be completed.
+
+
+A successful rebuild must achieve all of the following:
+
+Rules
+
+The implementation consistently follows the current Hess rules.
+
+Interactions
+
+Complex mechanics resolve correctly, including unusual combinations.
+
+State
+
+No legal sequence should permanently freeze the game.
+
+Multiplayer
+
+Clients cannot manipulate authoritative game state or reveal information they should not possess.
+
+UI
+
+Players can understand and interact with Hess without being overwhelmed.
+
+Academy
+
+Players can experiment with pieces and mechanics directly.
+AI
+Hess AI can legally and meaningfully reason about the game's unique mechanics.
+Testing
+Known failures become reproducible automated tests.
+Extensibility
+Future Hess rules can be introduced without rebuilding the entire engine from scratch.
+Maintainability
+There is one clear source of truth instead of competing implementations.
+28. V3 GOLDEN RULE
+The most important principle for the rebuild is:
+Do not build Hess around what the old code happens to do. Build the code around what Hess is supposed to be.
+The existing repository tells us where Hess has been.
+The V3 documents define where Hess is going.
+The actual games tell us what we may have overlooked.
+And playtesting will continue to tell us what we discover next.
+Hess remains a living game.
+The architecture must be stable enough to make it reliable, but flexible enough to let the game continue becoming something neither the original prototype nor this document can completely predict.
+END OF DOCUMENT 1 — HESS REBUILD SPECIFICATION V3
