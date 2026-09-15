@@ -1,0 +1,1652 @@
+Yep. With that correction, this should be the final agent-direction document. I’d make the document explicitly name the other Hess V3 documents so the agent knows the order in which to consume them and what authority each one has.
+
+HESS UPDATE V3
+
+AI Implementation & Repository Execution Protocol
+
+Document Type: AI Agent Operating Instructions
+Status: Authoritative workflow for the V3 implementation agent
+Project Model: New repository / independent rebuild
+Old Hess Repository: Reference only
+
+
+---
+
+1. Mission
+
+You are responsible for building Hess V3 as a new project and new repository.
+
+This is not a migration of the existing Hess application.
+
+The existing Hess repository is available only as a reference implementation and source of historical evidence.
+
+Your goal is to understand what Hess is, understand what the previous implementation attempted, understand what failed, and then build a new, clean implementation according to the V3 specifications.
+
+The intended result is:
+
+A correct Hess engine → reliable AI → secure multiplayer → polished Hess experience → useful learning system.
+
+Do not optimize for speed at the expense of understanding or verification.
+
+
+---
+
+2. The Three Roles of the Project Material
+
+There are three different categories of information you will encounter.
+
+A. V3 Documents — Authority
+
+These define what the new Hess V3 should be.
+
+B. Old Hess Repository — Reference
+
+This explains how Hess was previously implemented.
+
+It is useful evidence, but it is not authoritative.
+
+C. Historical Game Logs / Existing Behavior — Evidence
+
+These can reveal:
+
+bugs
+
+edge cases
+
+unexpected interactions
+
+AI weaknesses
+
+usability problems
+
+interesting gameplay situations
+
+
+They do not automatically define the rules.
+
+
+---
+
+3. Required Documents to Read
+
+Before making significant implementation decisions, read the Hess V3 documents in this order.
+
+Document 1 — Hess V3 Technical / Forensic Audit
+
+Purpose: Understand the problems discovered in the previous implementation.
+
+Use this document to understand:
+
+existing architectural problems
+
+duplicated engines
+
+rules divergence
+
+AI problems
+
+multiplayer/security problems
+
+setup privacy problems
+
+known freezes/deadlocks
+
+build/deployment problems
+
+obsolete infrastructure
+
+known technical risks
+
+
+Do not interpret its recommendations as instructions to modify the old repository.
+
+They describe problems V3 must avoid or solve.
+
+
+---
+
+Document 2 — Hess V3 Rules Playground & Piece Academy Specification
+
+Purpose: Understand Hess's rules, pieces, special mechanics, and learning experience.
+
+Study:
+
+piece movement
+
+Piece Academy
+
+Interaction Mode
+
+special mechanics
+
+Hidden Setup
+
+King Swap
+
+Queen Desperation Raid
+
+Jester lifecycle
+
+Desperation Stale
+
+Two-King countdown
+
+Guided Practice Match
+
+contextual learning
+
+
+This document describes how players should learn and experiment with Hess.
+
+
+---
+
+Document 3 — Hess V3 Rebuild & Engineering Specification
+
+Purpose: Define the target technical architecture and implementation strategy.
+
+Study:
+
+authoritative engine
+
+state model
+
+ruleset versioning
+
+special-state handling
+
+testing strategy
+
+AI architecture
+
+multiplayer architecture
+
+security
+
+replay infrastructure
+
+rebuild phases
+
+definition of done
+
+
+This document should be treated as the primary technical blueprint.
+
+
+---
+
+Document 4 — Hess V3 UI/UX & Visual Design Direction
+
+Purpose: Define the target experience and visual language.
+
+Study:
+
+Chess.com-inspired interaction principles
+
+iOS-inspired UX principles
+
+Hess visual identity
+
+black/gold direction
+
+optional light theme
+
+board interaction
+
+special-action UX
+
+Academy
+
+Rulebook
+
+contextual help
+
+mobile-first design
+
+accessibility
+
+animation
+
+icons
+
+spacing
+
+typography
+
+color usage
+
+
+Use these principles when designing the new interface.
+
+Do not copy Chess.com or iOS.
+
+
+---
+
+Document 5 — This Document: AI Implementation & Repository Execution Protocol
+
+This document defines how you should work.
+
+It governs:
+
+repository usage
+
+implementation sequence
+
+phase boundaries
+
+testing
+
+verification
+
+reporting
+
+handling uncertainty
+
+avoiding one-shot implementation
+
+avoiding fake functionality
+
+UI/UX quality expectations
+
+
+
+---
+
+4. Required Reading Order
+
+The expected sequence is:
+
+1. Technical Audit
+
+↓
+
+2. Rules / Academy Specification
+
+↓
+
+3. Rebuild / Engineering Specification
+
+↓
+
+4. UI/UX Design Direction
+
+↓
+
+5. This Execution Protocol
+
+↓
+
+6. Inspect the Old Repository
+
+↓
+
+7. Begin planning the New Repository
+
+Do not start implementing before completing this understanding phase.
+
+
+---
+
+5. The Old Repository Is Read-Only Reference
+
+The old Hess repository must be treated as:
+
+> Reference material, not the V3 foundation.
+
+
+
+Do not:
+
+modify it
+
+migrate it
+
+progressively "clean it up"
+
+reorganize it as part of V3
+
+treat its architecture as the V3 architecture
+
+assume its rules are correct
+
+blindly copy its files
+
+
+You may inspect it thoroughly.
+
+You may extract useful ideas from it.
+
+You may reproduce correct concepts in the new project.
+
+But the new repository must be built independently.
+
+
+---
+
+6. How to Study the Old Repository
+
+Do not simply browse a few files and start coding.
+
+Understand:
+
+Architecture
+
+frontend
+
+backend
+
+engine
+
+AI
+
+networking
+
+persistence
+
+configuration
+
+deployment
+
+
+Game implementation
+
+Determine how the previous version represented:
+
+board state
+
+pieces
+
+movement
+
+captures
+
+promotions
+
+King Swap
+
+Jester
+
+Queen Raid
+
+game endings
+
+setup
+
+
+AI
+
+Determine:
+
+how moves were generated
+
+how positions were evaluated
+
+how search worked
+
+how difficulty worked
+
+where known failures occurred
+
+
+UI/UX
+
+Determine:
+
+what interaction patterns existed
+
+what was useful
+
+what was generic
+
+what was confusing
+
+what should be redesigned
+
+
+Bugs
+
+Cross-reference the audit and historical games.
+
+Do not assume every strange behavior is intentional.
+
+
+---
+
+7. Build a New Repository
+
+After understanding the material, establish a new Hess V3 repository.
+
+The new repository should have its own:
+
+architecture
+
+dependency selection
+
+source tree
+
+engine
+
+tests
+
+AI
+
+UI
+
+multiplayer
+
+documentation
+
+configuration
+
+deployment setup
+
+
+Do not copy the old project wholesale.
+
+Reimplement intentionally.
+
+
+---
+
+8. Do Not One-Shot Hess
+
+This is a strict requirement.
+
+Do not attempt:
+
+> "Build the entire Hess application."
+
+
+
+in one massive generation.
+
+Hess is too interconnected for that to be reliable.
+
+Instead:
+
+> Understand → Plan → Implement → Test → Verify → Report → Continue.
+
+
+
+
+---
+
+9. Start With a Project Understanding Report
+
+Before significant coding, produce a short implementation plan based on the four V3 documents and old repository investigation.
+
+It should identify:
+
+proposed new architecture
+
+proposed source tree
+
+major subsystems
+
+dependencies
+
+engine strategy
+
+AI strategy
+
+UI strategy
+
+testing strategy
+
+migration/reimplementation decisions
+
+unresolved questions
+
+first implementation phase
+
+
+Do not pretend the plan is final.
+
+It should be refined as the project becomes better understood.
+
+
+---
+
+10. Work in Controlled Phases
+
+Use the phases defined by the Engineering Specification.
+
+The general order is:
+
+Phase 0 — Understanding & Architecture
+
+No major feature implementation.
+
+Establish the new repository and architecture.
+
+
+---
+
+Phase 1 — Authoritative Hess Engine
+
+Build:
+
+state
+
+pieces
+
+legal moves
+
+transitions
+
+validation
+
+deterministic serialization
+
+hashing
+
+ruleset/version representation
+
+
+The engine becomes the foundation of the entire application.
+
+
+---
+
+Phase 2 — Special Mechanics
+
+Implement and test:
+
+Missile Rook
+
+Staircase Bishop
+
+T-Shape Knight
+
+King Swap
+
+Jester
+
+Queen Raid
+
+promotions
+
+Desperation Stale
+
+two-King countdown
+
+other special state transitions
+
+
+
+---
+
+Phase 3 — Testing & Replay
+
+Build the machinery required to confidently test Hess.
+
+Include:
+
+unit tests
+
+interaction tests
+
+invariants
+
+generated positions
+
+setup permutations
+
+replay fixtures
+
+regression tests
+
+edge-case scenarios
+
+
+
+---
+
+Phase 4 — AI
+
+Build the Hess AI on top of the authoritative engine.
+
+Do not create an independent rule implementation for the AI.
+
+
+---
+
+Phase 5 — Multiplayer & Security
+
+Build:
+
+server-authoritative game state
+
+secure hidden setup
+
+sessions
+
+reconnect
+
+validation
+
+room lifecycle
+
+security controls
+
+
+
+---
+
+Phase 6 — Game UI/UX
+
+Build the actual player experience around the validated game system.
+
+
+---
+
+Phase 7 — Academy & Rulebook
+
+Build the learning environment using the real Hess engine.
+
+
+---
+
+Phase 8 — Full Integration & Hardening
+
+Test everything together.
+
+
+---
+
+11. One Phase at a Time
+
+Do not automatically jump from one phase to another.
+
+At the end of a phase:
+
+1. Test it.
+
+
+2. Verify the result.
+
+
+3. Report the result.
+
+
+4. Identify remaining issues.
+
+
+5. Wait for confirmation when appropriate.
+
+
+6. Then proceed.
+
+
+
+A phase that has unresolved critical failures is not complete.
+
+
+---
+
+12. One Meaningful Change at a Time
+
+Within a phase, changes should remain understandable.
+
+Avoid massive unrelated modifications.
+
+Prefer:
+
+> Implement Missile Rook.
+
+
+
+Then:
+
+> Test Missile Rook.
+
+
+
+Then:
+
+> Fix discovered edge case.
+
+
+
+Then:
+
+> Verify regression suite.
+
+
+
+Then move forward.
+
+This makes the project easier to debug and review.
+
+
+---
+
+13. Always Test What You Change
+
+Never say:
+
+> "This should work."
+
+
+
+Test it.
+
+For example:
+
+If modifying pawn movement:
+
+Test:
+
+unmoved pawn
+
+moved pawn
+
+starting square
+
+non-starting square
+
+single move
+
+double move
+
+capture
+
+King Swap interaction
+
+promotion interaction
+
+
+If modifying Jester:
+
+Test its entire lifecycle, not just one movement.
+
+
+---
+
+14. Test Interactions, Not Just Individual Rules
+
+Hess's complexity comes from interactions.
+
+Therefore, do not stop at:
+
+> "Each piece passes its movement tests."
+
+
+
+Also test:
+
+> "What happens when this piece interacts with that state?"
+
+
+
+Examples:
+
+King Swap + pawn movement
+
+King Swap + pawn double-step
+
+Jester + capture
+
+Jester + sacrifice
+
+Jester + no eligible sacrifice
+
+Jester + retained turn
+
+Queen + midfield
+
+Queen + Raid
+
+promotion + Jester
+
+setup + King position
+
+setup + Queen position
+
+endgame + special movement
+
+
+
+---
+
+15. Test Player-Created Positions
+
+Do not rely exclusively on the default starting position.
+
+Hess allows players to create unusual configurations.
+
+Therefore test:
+
+edge Kings
+
+edge Queens
+
+unusual back-rank configurations
+
+advanced pawns
+
+swapped pieces
+
+Jesters in unusual positions
+
+unusual combinations of special pieces
+
+positions resulting from many previous swaps
+
+
+The test system should eventually be able to generate or construct many such positions.
+
+
+---
+
+16. Use Historical Games as Regression Material
+
+The old Hess game logs should be studied.
+
+Where useful, turn them into regression fixtures.
+
+However:
+
+> A historical move is not automatically a legal V3 move.
+
+
+
+If the old engine permitted an illegal move, the correct response is to identify and test the bug.
+
+Do not reproduce it merely because it appears in a historical match.
+
+
+---
+
+17. No Demo Data
+
+Do not populate the new application with fabricated production-like information.
+
+No fake:
+
+players
+
+games
+
+rankings
+
+match history
+
+statistics
+
+notifications
+
+multiplayer activity
+
+AI records
+
+
+If real data does not exist, create a proper empty state.
+
+Development fixtures may exist inside test infrastructure, but they must never be mistaken for production data.
+
+
+---
+
+18. No Fake Functionality
+
+Do not build interfaces that merely look complete.
+
+Do not create:
+
+fake matchmaking
+
+fake multiplayer
+
+fake AI responses
+
+fake persistence
+
+fake statistics
+
+fake loading operations
+
+fake completed games
+
+
+A feature should either work or clearly remain a development placeholder.
+
+
+---
+
+19. Do Not Hide Problems
+
+If you discover a bug:
+
+Report it.
+
+If you discover contradictory rules:
+
+Report it.
+
+If a test exposes an architectural problem:
+
+Report it.
+
+If something cannot safely be implemented yet:
+
+Stop and explain why.
+
+Do not quietly work around fundamental problems just to reach the next phase.
+
+
+---
+
+20. Handling Unresolved Rules
+
+Hess rules can evolve.
+
+If a rule is unclear:
+
+1. Identify the uncertainty.
+
+
+2. Check all V3 documents.
+
+
+3. Check the old implementation for context.
+
+
+4. Check historical games for evidence.
+
+
+5. Determine whether a provisional rule already exists.
+
+
+6. If not, propose a deterministic temporary behavior.
+
+
+7. Record it explicitly.
+
+
+8. Add a test around the chosen behavior.
+
+
+9. Continue only if it does not block the current work.
+
+
+
+Never silently invent behavior.
+
+
+---
+
+21. Rule Changes Must Be Controlled
+
+If implementation reveals that a Hess rule should change, do not quietly alter it.
+
+State:
+
+> Rule change proposed
+
+
+
+Then explain:
+
+current behavior
+
+problem
+
+proposed behavior
+
+gameplay consequence
+
+engine consequence
+
+testing consequence
+
+
+Once decided, update the appropriate V3 documentation and implementation.
+
+
+---
+
+22. The Engine Is the Authority
+
+There must ultimately be one authoritative Hess rules engine.
+
+The desired relationship is:
+
+Hess Engine
+
+↙ ↓ ↘
+
+UI | Server | AI
+
+The UI should not independently determine Hess rules.
+
+The AI should not independently determine Hess rules.
+
+The server should not have a second conflicting rules implementation.
+
+
+---
+
+23. AI Must Use the Same Rules
+
+The AI should request legal moves from the same engine used by players.
+
+This is especially important for:
+
+unusual movement
+
+King Swap
+
+Jester
+
+Queen Raid
+
+promotions
+
+retained-turn actions
+
+game-ending conditions
+
+
+The AI must never need to guess whether a move is legal.
+
+
+---
+
+24. AI Quality Is a Core Requirement
+
+Do not treat AI as an optional final decoration.
+
+Hess's strategic complexity makes the AI a major part of the product.
+
+It must eventually understand:
+
+dynamic piece value
+
+advanced pawns
+
+King Swaps
+
+Jester decisions
+
+sacrifices
+
+promotion threats
+
+Queen positioning
+
+repetition
+
+endgame states
+
+tactical consequences
+
+
+Start with a reliable engine.
+
+Then make the AI increasingly sophisticated.
+
+
+---
+
+25. AI Must Remain Observable During Development
+
+Provide development/debug instrumentation where useful.
+
+Examples:
+
+candidate moves
+
+evaluation values
+
+search depth
+
+principal variation
+
+evaluation components
+
+selected move
+
+reason for special-action selection
+
+
+This is for development and debugging, not necessarily the normal player interface.
+
+
+---
+
+26. Do Not Mislabel AI Techniques
+
+If an algorithm is not actually performing a particular machine-learning method, do not label it as such.
+
+For example:
+
+> Static terminal-outcome evaluation
+
+
+
+is not automatically:
+
+> Temporal-difference learning.
+
+
+
+Technical terminology should describe what the system actually does.
+
+
+---
+
+27. UI/UX Is Part of "Done"
+
+A technically correct Hess engine with a poor interface is not a finished Hess V3.
+
+Follow the UI/UX Design Direction.
+
+Pay attention to:
+
+spacing
+
+hierarchy
+
+typography
+
+touch targets
+
+responsiveness
+
+contrast
+
+accessibility
+
+animation
+
+feedback
+
+empty states
+
+error states
+
+loading states
+
+special-action states
+
+
+
+---
+
+28. Visual Direction
+
+The established Hess visual direction includes black and gold.
+
+Use it deliberately.
+
+Do not turn the application into a wall of gold.
+
+The design should establish:
+
+primary surfaces
+
+secondary surfaces
+
+accent color
+
+semantic colors
+
+typography
+
+board palette
+
+interaction states
+
+
+A light theme is encouraged where practical.
+
+The light theme should be designed intentionally rather than simply inverted.
+
+
+---
+
+29. Color Must Have Meaning
+
+Use color consistently for:
+
+selection
+
+legal movement
+
+capture
+
+warnings
+
+errors
+
+success
+
+special actions
+
+inactive states
+
+
+Do not depend entirely on color.
+
+Pair important states with:
+
+icons
+
+text
+
+shape
+
+position
+
+animation
+
+
+
+---
+
+30. Spacing and Layout
+
+Do not cram UI elements together merely because they fit.
+
+Maintain intentional:
+
+margins
+
+padding
+
+component spacing
+
+board spacing
+
+typography scale
+
+hierarchy
+
+
+The interface should feel deliberate.
+
+
+---
+
+31. Icons, Not Emojis
+
+Do not use emojis as substitutes for interface icons.
+
+Use:
+
+Lucide
+
+or another coherent professional icon library.
+
+
+Examples:
+
+Settings → settings icon.
+
+Close → close icon.
+
+Undo → undo icon.
+
+Information → info icon.
+
+Emojis may exist as actual user content, but they should not form the application's structural UI language.
+
+
+---
+
+32. Avoid Generic AI-Generated UI
+
+Do not automatically produce:
+
+purple gradients
+
+giant rounded cards
+
+excessive glass effects
+
+dashboard layouts
+
+meaningless statistics
+
+decorative blobs
+
+excessive pill buttons
+
+huge headings
+
+excessive shadows
+
+unnecessary animations
+
+
+The interface should look intentionally designed for Hess.
+
+
+---
+
+33. Reference Other Products Properly
+
+Chess.com can inspire:
+
+board interaction
+
+move feedback
+
+game information
+
+move history
+
+analysis patterns
+
+game controls
+
+
+iOS can inspire:
+
+hierarchy
+
+sheets
+
+contextual actions
+
+navigation
+
+spacing
+
+touch interaction
+
+transitions
+
+
+Modern games can inspire:
+
+onboarding
+
+feedback
+
+tutorials
+
+special-action presentation
+
+
+But:
+
+> Do not copy their visual identities.
+
+
+
+Extract principles.
+
+
+---
+
+34. Mobile First
+
+Hess must be tested on phone-sized screens.
+
+The board remains the central experience.
+
+Do not allow:
+
+tiny controls
+
+unreadable text
+
+cramped board
+
+dialogs that completely obscure gameplay
+
+awkward special-action controls
+
+
+Desktop can provide additional space rather than defining the fundamental interaction.
+
+
+---
+
+35. Design the Difficult Screens Early
+
+Do not spend the first UI phase making the home screen beautiful.
+
+Prototype the actual gameplay experience.
+
+Test:
+
+normal move
+
+capture
+
+King Swap
+
+Jester interaction
+
+Queen Raid
+
+setup
+
+promotion
+
+AI thinking
+
+unusual game endings
+
+
+If the interface handles these correctly, simpler screens can follow.
+
+
+---
+
+36. No Unexplained Freezes
+
+The application must have a defined response for:
+
+zero legal moves
+
+stalemate
+
+Jester with no sacrifice
+
+AI with no legal move
+
+disconnected opponent
+
+reconnecting
+
+expired session
+
+completed game
+
+unexpected state
+
+
+Never allow the player to stare at a frozen board without explanation.
+
+
+---
+
+37. Validate Before Continuing
+
+A successful compile is not sufficient.
+
+Before advancing, verify:
+
+Correctness
+
+Does it obey the rules?
+
+Stability
+
+Does it handle edge cases?
+
+Integration
+
+Does it work with the systems around it?
+
+UX
+
+Can a player actually understand/use it?
+
+Regression
+
+Did the change break something previously working?
+
+
+---
+
+38. Phase Reports
+
+At the end of every meaningful phase, produce:
+
+HESS V3 — PHASE REPORT
+
+Phase:
+Status:
+
+Implemented:
+- ...
+
+Files/Areas Created or Changed:
+- ...
+
+Tests Added:
+- ...
+
+Tests Run:
+- ...
+
+Verified:
+- ...
+
+Known Issues:
+- ...
+
+Unresolved Decisions:
+- ...
+
+Not Yet Implemented:
+- ...
+
+Next Recommended Step:
+- ...
+
+Do not claim a test was performed if it was not actually performed.
+
+
+---
+
+39. Stop and Ask for Review When
+
+Pause when:
+
+a major Hess rule is ambiguous
+
+two authoritative documents conflict
+
+implementation requires changing a fundamental rule
+
+a destructive architectural decision is required
+
+security behavior is uncertain
+
+an important test contradicts the specification
+
+a special mechanic cannot be represented cleanly
+
+continuing would require inventing product behavior
+
+
+Do not bury these problems inside implementation.
+
+
+---
+
+40. Definition of a Successful V3
+
+The new Hess repository should eventually be able to stand independently of the old repository.
+
+It should have:
+
+one authoritative Hess engine
+
+deterministic state transitions
+
+comprehensive rule testing
+
+interaction testing
+
+replay/regression infrastructure
+
+Hess-aware AI
+
+secure multiplayer
+
+hidden setup
+
+robust special-state handling
+
+polished mobile-first UI
+
+Piece Academy
+
+Interaction Mode
+
+Rulebook
+
+contextual learning
+
+light/dark visual support where implemented
+
+accessible interaction
+
+no fake production data
+
+no unexplained freezes
+
+maintainable architecture
+
+
+
+---
+
+41. The Fundamental Development Loop
+
+Every implementation decision should folEvery implementation decision should follow this pattern:
+Read
+↓
+Understand
+↓
+Inspect
+↓
+Plan
+↓
+Implement one bounded piece
+↓
+Test
+↓
+Verify
+↓
+Report
+↓
+Confirm
+↓
+Continue
+42. Final Instruction to the AI
+You are not being asked to generate a Hess demo.
+You are being asked to build a real implementation of an original and unusually complex strategy game.
+The old repository gives you history.
+The V3 documents give you direction.
+The tests give you evidence.
+The implementation gives you the final product.
+Do not confuse the old implementation with the specification.
+Do not confuse a successful build with correctness.
+Do not confuse a beautiful screen with good UX.
+Do not confuse fake data with a finished feature.
+Do not confuse speed with progress.
+Build Hess V3 deliberately.
+Understand the project completely enough to make good decisions, then build it one verified layer at a time.
+Old Repository = Reference
+V3 Documents = Authority
+New Repository = Implementation
+That is the operating model for Hess V3.
