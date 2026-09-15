@@ -1,0 +1,1461 @@
+Absolutely. And I think this one should be a design-direction document, not another technical specification.
+
+It should tell the rebuilding AI how to think about Hess's UI/UX, what to borrow from Chess.com/iOS/other products, what not to copy, and how to design around Hess's unusual mechanics.
+
+HESS UPDATE V3
+
+UI/UX & Visual Design Direction
+
+Design Reference & Experience Specification
+
+Document Type: Product Design / UI/UX Direction
+Status: Authoritative design direction for V3 rebuild
+Rule Status: UI/UX may evolve during implementation
+Relationship to other V3 documents: This document governs the experience and presentation of Hess, while the Rules/Engineering documents govern the underlying game system.
+
+
+---
+
+1. Purpose
+
+Hess V3 should receive a complete UI/UX redesign, not merely a visual refresh of the existing interface.
+
+The original Hess implementation intentionally used a relatively generic game interface. That was appropriate for proving the game itself, but V3 should treat the interface as part of the product.
+
+The goal is to create an experience that feels:
+
+polished
+
+modern
+
+responsive
+
+understandable
+
+game-focused
+
+mobile-friendly
+
+distinctive to Hess
+
+capable of handling Hess's unusual mechanics without overwhelming the player
+
+
+The design should take inspiration from established products and interaction systems, especially:
+
+Chess.com and other high-quality chess interfaces
+
+iOS / Apple Human Interface Guidelines
+
+modern mobile games
+
+high-quality board-game interfaces
+
+established interaction patterns for tutorials, analysis, menus, and contextual actions
+
+
+These references are sources of design principles, not templates to copy.
+
+> Hess's rules are original. Its interface should also develop its own identity.
+
+
+
+
+---
+
+2. Core Design Principle
+
+The most important design principle is:
+
+> Design the interface around Hess, rather than forcing Hess into a conventional chess interface.
+
+
+
+Chess provides useful familiarity:
+
+board
+
+pieces
+
+turns
+
+captures
+
+move history
+
+player information
+
+game states
+
+analysis
+
+
+But Hess introduces additional concepts:
+
+hidden setup
+
+unusual movement systems
+
+King Swap
+
+Queen Desperation Raid
+
+Jester lifecycle
+
+Jester sacrifice decisions
+
+special movement continuations
+
+unusual endgame conditions
+
+two-King countdown
+
+complex positional consequences
+
+
+The interface therefore needs to support a game that looks understandable at first glance but becomes deeper as the player discovers it.
+
+
+---
+
+3. Design Reference Philosophy
+
+The implementation agent should actively study successful interfaces before designing V3.
+
+However:
+
+Do NOT do this
+
+> "Make Hess look like Chess.com."
+
+
+
+or:
+
+> "Make Hess look like iOS."
+
+
+
+Instead:
+
+> "Identify what these systems do exceptionally well, understand why those interactions work, and adapt the principles to Hess."
+
+
+
+
+---
+
+4. Chess.com as a Reference
+
+Chess.com should primarily be treated as a reference for gameplay interaction, rather than visual branding.
+
+Useful areas to study:
+
+Board interaction
+
+Study:
+
+selecting pieces
+
+highlighting legal moves
+
+capture indication
+
+last-move indication
+
+check/check-like states where applicable
+
+board orientation
+
+touch interaction
+
+drag vs tap interaction
+
+move confirmation
+
+animation timing
+
+
+Hess should have an equally clear interaction language, while accounting for its own movement systems.
+
+Game information
+
+Study how chess interfaces communicate:
+
+whose turn it is
+
+player identity
+
+game state
+
+move history
+
+captured pieces
+
+game completion
+
+resign/draw/options
+
+analysis/review
+
+
+Hess should adopt similarly strong information hierarchy.
+
+Move history
+
+The move list should become more useful in Hess because special actions can make ordinary notation insufficient.
+
+The interface should visually distinguish things such as:
+
+normal movement
+
+captures
+
+King Swaps
+
+promotions
+
+Jester-related actions
+
+special continuation actions
+
+other major state transitions
+
+
+The exact notation remains an engine concern, but the UI should make special actions immediately recognizable.
+
+
+---
+
+5. iOS-Inspired Interaction Design
+
+Hess should use iOS-inspired interaction principles, especially for mobile.
+
+This does not mean copying Apple's interface.
+
+Useful principles include:
+
+Hierarchy
+
+Important information should be immediately obvious.
+
+Secondary information should remain available without competing with the board.
+
+Progressive disclosure
+
+Do not explain every Hess rule simultaneously.
+
+Show information when it becomes relevant.
+
+For example:
+
+Normal game
+
+> Your turn
+
+
+
+rather than a giant explanation of every possible Hess mechanic.
+
+When a player encounters a Jester decision:
+
+> Jester reached a sacrifice point
+Choose what happens next.
+
+
+
+The relevant information appears when the player needs it.
+
+Sheets and contextual actions
+
+Special decisions can use lightweight sheets, popovers, or contextual panels rather than navigating away from the game.
+
+For example:
+
+Jester decision
+
+Sacrifice
+Return
+Cancel
+
+while keeping the board visible behind the decision.
+
+The exact interaction should be determined by usability testing.
+
+Touch targets
+
+Controls must be comfortable on phones.
+
+Avoid:
+
+tiny icons
+
+tightly packed controls
+
+precision-dependent buttons
+
+controls that require repeated tapping
+
+
+Hess should remain playable comfortably on a small Android screen.
+
+
+---
+
+6. Mobile-First, Not Mobile-Reduced
+
+The primary design target should be a phone.
+
+Desktop should then expand the experience rather than define it.
+
+A mobile player should be able to:
+
+understand the board
+
+select pieces
+
+make moves
+
+perform special actions
+
+understand whose turn it is
+
+access move history
+
+access rules/help
+
+interact with AI
+
+exit/pause/review the game
+
+
+without fighting the interface.
+
+The board should remain the visual center of the game.
+
+
+---
+
+7. The Board Is the Product's Center
+
+The game screen should not feel like a dashboard with a chessboard embedded inside it.
+
+The hierarchy should generally be:
+
+Game state
+
+↓
+
+Board
+
+↓
+
+Relevant contextual controls
+
+↓
+
+Secondary information
+
+The board should receive the majority of the player's visual attention.
+
+Avoid filling the game screen with:
+
+unnecessary cards
+
+excessive statistics
+
+decorative panels
+
+large instructional text
+
+permanent explanations
+
+unnecessary buttons
+
+
+
+---
+
+8. Hess Visual Identity
+
+The design agent should develop a visual language specifically for Hess.
+
+It should explore:
+
+typography
+
+board treatment
+
+piece presentation
+
+motion
+
+surfaces
+
+iconography
+
+state indicators
+
+transitions
+
+sound/haptic opportunities
+
+color semantics
+
+
+The final result should feel like one coherent product, rather than:
+
+> Chess.com board + iOS menus + random game UI.
+
+
+
+Avoid generic AI/SaaS aesthetics
+
+Do not automatically use:
+
+purple gradients
+
+excessive glassmorphism
+
+glowing AI effects
+
+generic rounded cards everywhere
+
+excessive gradients
+
+meaningless decorative blobs
+
+emoji as UI icons
+
+
+Icons should preferably use a consistent icon system such as Lucide or an equivalent professional icon library.
+
+
+---
+
+9. Board Design
+
+The board should be visually distinctive but remain highly readable.
+
+Important considerations:
+
+Square clarity
+
+Players should immediately understand:
+
+selected square
+
+legal destination
+
+capture destination
+
+last move
+
+special movement
+
+blocked movement
+
+dangerous/critical states
+
+
+Special movement visualization
+
+This is particularly important for Hess.
+
+A player should be able to understand unusual movement through the board itself.
+
+For example, a Missile Rook should make its unusual movement pattern visually obvious.
+
+The Staircase Bishop should communicate its staircase trajectory.
+
+The T-Shape Knight should communicate its available routes.
+
+The player should not always need to open the Rulebook to understand what happened.
+
+
+---
+
+10. Movement Feedback
+
+Movement feedback should be informative rather than decorative.
+
+Possible feedback:
+
+subtle square highlighting
+
+movement path previews
+
+destination indicators
+
+capture markers
+
+short movement animations
+
+special-action animation
+
+haptic feedback on supported devices
+
+
+Animations should communicate state transitions.
+
+They should not delay gameplay.
+
+
+---
+
+11. Special Actions Need Their Own Interaction Language
+
+Hess contains actions that aren't ordinary piece movement.
+
+These should not be visually indistinguishable from normal moves.
+
+Examples:
+
+King Swap
+
+The UI should communicate:
+
+> This is a swap, not a normal King move.
+
+
+
+The player should clearly see:
+
+the King
+
+eligible pawn(s)
+
+the swap relationship
+
+the resulting positions
+
+
+Queen Desperation Raid
+
+The UI should communicate:
+
+that the special condition has activated
+
+how many enemy-territory moves remain
+
+when the Queen returns
+
+what restrictions currently apply
+
+
+Jester
+
+Jester interactions may involve multiple states.
+
+The UI should clearly communicate:
+
+current Jester state
+
+movement direction/state
+
+available actions
+
+sacrifice decision
+
+transformation/return decisions
+
+continuation of the turn when applicable
+
+
+The player should never wonder:
+
+> "Why did the game suddenly give me another decision?"
+
+
+
+The UI should explain the state succinctly.
+
+
+---
+
+12. Resolution States
+
+Hess contains situations where a normal move is not immediately sufficient to resolve the game state.
+
+For V3, these should be treated as explicit Resolution States.
+
+This is a provisional engineering/design term.
+
+Examples:
+
+Jester sacrifice decision
+
+Jester home-rank decision
+
+special continuation
+
+other future mechanics requiring player choice
+
+
+The UI should make the state unmistakable.
+
+Example:
+
+> Jester Decision
+Your Jester has reached a sacrifice point.
+
+
+
+Then present only the currently legal choices.
+
+Do not expose impossible choices and then display an error after selection.
+
+
+---
+
+13. Piece Academy
+
+The Piece Academy should be one of the strongest parts of Hess's onboarding.
+
+It should contain:
+
+1. Interaction Mode
+
+A player can freely interact with pieces.
+
+They should be able to:
+
+select pieces
+
+move them
+
+test movement
+
+place pieces where appropriate
+
+experiment with interactions
+
+
+This is important because Hess is fundamentally a game that benefits from experimentation.
+
+The player should be able to discover:
+
+> "What happens if I put this piece here?"
+
+
+
+rather than only reading instructions.
+
+
+---
+
+2. Piece Lessons
+
+Structured lessons explain individual pieces.
+
+The lesson should demonstrate the movement visually.
+
+Avoid walls of text.
+
+Prefer:
+
+Visual demonstration
+
+→
+
+short explanation
+
+→
+
+player tries it
+
+→
+
+small challenge
+
+
+---
+
+3. Special Mechanics
+
+Complex interactions should be taught separately.
+
+Examples:
+
+Hidden Setup
+
+King Swap
+
+Queen Raid
+
+Jester lifecycle
+
+Desperation Stale
+
+Two-King countdown
+
+
+
+---
+
+4. Guided Practice Match
+
+A simplified match against an easy AI.
+
+The game should introduce mechanics progressively.
+
+When the player encounters an unfamiliar mechanic for the first time, pause or slow the experience enough to explain it.
+
+
+---
+
+14. Contextual Help
+
+Hess should avoid forcing players to memorize the entire ruleset.
+
+A player should be able to access contextual information while playing.
+
+For example:
+
+Long-pressing a piece could show a compact Piece Card containing:
+
+piece name
+
+small movement visualization
+
+short description
+
+relevant special state
+
+
+This should be concise.
+
+It should not open a giant documentation page unless requested.
+
+
+---
+
+15. Rulebook
+
+The Rulebook should be designed for reference, not required reading before playing.
+
+Recommended structure:
+
+Basic Rules
+
+board
+
+turn order
+
+basic movement
+
+captures
+
+objective
+
+
+Advanced Situations
+
+King Swap
+
+Desperation Stale
+
+Two-King countdown
+
+other unusual game-state rules
+
+
+Legendary Pieces
+
+Jester
+
+Queen Raid
+
+other complex mechanics
+
+
+The player should be able to jump directly to what they need.
+
+
+---
+
+16. Setup Experience
+
+Hidden Setup is one of Hess's major differences from ordinary chess.
+
+Therefore setup should feel deliberate and exciting rather than like a configuration form.
+
+The opponent's hidden configuration should remain genuinely hidden.
+
+The interface can communicate:
+
+> Your setup
+
+
+
+and separately:
+
+> Opponent is preparing
+
+
+
+without revealing the opponent's choices.
+
+Once both players are ready:
+
+> Setup revealed
+
+
+
+Then transition into the game.
+
+This reveal can be a meaningful animation, but it should remain short.
+
+
+---
+
+17. Information Privacy Is Also UX
+
+Security and UX overlap in Hess.
+
+If setup is supposed to be hidden, the interface must never accidentally reveal it through:
+
+animations
+
+move previews
+
+network state
+
+opponent-facing UI
+
+notifications
+
+temporary board states
+
+cached data
+
+
+The user experience should reflect the actual privacy model.
+
+
+---
+
+18. Game States Must Be Visually Obvious
+
+The interface should clearly communicate states such as:
+
+Your turn
+
+Opponent's turn
+
+AI thinking
+
+special decision pending
+
+game won
+
+game lost
+
+draw
+
+disconnected
+
+reconnecting
+
+opponent disconnected
+
+setup pending
+
+setup revealed
+
+
+Avoid relying purely on color.
+
+Use combinations of:
+
+text
+
+iconography
+
+position
+
+animation
+
+semantic color where appropriate
+
+
+
+---
+
+19. AI Experience
+
+Hess's AI should feel like a legitimate opponent.
+
+The UI should not pretend the AI is a human.
+
+During AI thinking, provide subtle feedback such as:
+
+> Hess is thinking…
+
+
+
+Avoid excessive fake activity.
+
+For development/debug builds, provide optional AI reasoning information such as:
+
+candidate moves
+
+evaluation
+
+search depth
+
+principal variation
+
+selected move
+
+evaluation components
+
+
+This information does not necessarily need to be visible to normal players.
+
+But the architecture should make the AI observable during development.
+
+
+---
+
+20. Difficulty
+
+Difficulty should primarily change:
+
+search depth
+
+evaluation sophistication
+
+computational budget
+
+tactical awareness
+
+strategic planning
+
+
+It should not primarily mean:
+
+> "Make random bad moves."
+
+
+
+Easy AI can play simpler strategies, but it must remain rule-correct.
+
+A player should never encounter an AI that:
+
+makes illegal moves
+
+gets stuck
+
+cannot resolve a special action
+
+freezes because there are no ordinary moves
+
+misunderstands Jester continuation
+
+repeatedly shuffles without understanding the game state because the search system cannot evaluate it
+
+
+
+---
+
+21. Motion Design
+
+Animation should communicate meaning.
+
+Good animation:
+
+piece movement
+
+capture
+
+swap
+
+promotion
+
+Jester transformation
+
+setup reveal
+
+special activation
+
+game completion
+
+
+Bad animation:
+
+decorative effects everywhere
+
+excessive bouncing
+
+long transitions
+
+effects that obscure the board
+
+animations that make the player wait unnecessarily
+
+
+The game should feel alive without feeling noisy.
+
+
+---
+
+22. Sound and Haptics
+
+These should be considered optional enhancement layers.
+
+Possible haptic events:
+
+selecting a piece
+
+successful move
+
+capture
+
+special action
+
+promotion
+
+major game-state change
+
+
+Sound should similarly distinguish important events.
+
+However:
+
+> No feedback effect should be required to understand the game.
+
+
+
+
+---
+
+23. Accessibility
+
+The design must support players who cannot rely on subtle color differences.
+
+Consider:
+
+sufficient contrast
+
+readable typography
+
+touch target sizes
+
+semantic labels
+
+screen-reader-friendly controls
+
+reduced-motion support
+
+non-color indicators for game states
+
+clear focus states where relevant
+
+
+Special mechanics should remain understandable without animation alone.
+
+
+---
+
+24. Responsive Layout
+
+Phone
+
+Prioritize:
+
+Player → Board → Essential controls
+
+Tablet
+
+Allow additional information beside/below the board where useful.
+
+Desktop
+
+Potentially support:
+
+board
+
+move history
+
+game information
+
+contextual analysis
+
+optional panels
+
+
+But desktop should not create unnecessary complexity.
+
+
+---
+
+25. Navigation Architecture
+
+The application should have a small number of clear destinations.
+
+Possible high-level structure:
+
+Play
+
+New Game
+
+Play vs AI
+
+Multiplayer
+
+Continue/Reconnect
+
+
+Learn
+
+Piece Academy
+
+Special Mechanics
+
+Guided Match
+
+Rulebook
+
+
+Review
+
+Game history/replay
+
+Analysis
+
+
+Settings
+
+Board preferences
+
+Sound
+
+Haptics
+
+Accessibility
+
+Other preferences
+
+
+The exact navigation structure may change after implementation testing.
+
+Do not create navigation categories simply because conventional apps have them.
+
+
+---
+
+26. Game Screen Should Stay Focused
+
+The game screen should not become a control center.
+
+Permanent controls should be limited to actions players actually need during the game.
+
+Secondary options can live behind:
+
+menus
+
+sheets
+
+contextual controls
+
+
+The player's attention should remain on the game.
+
+
+---
+
+27. No Timer by Default
+
+Hess currently does not require a chess-style clock.
+
+The interface should therefore not assume that a timer is necessary.
+
+If a timer is introduced later, it should be added as an explicit game mode rather than embedded into the fundamental Hess experience.
+
+
+---
+
+28. Error States
+
+Errors should explain what happened.
+
+Bad:
+
+> Invalid action.
+
+
+
+Better:
+
+> That pawn has already moved, so it cannot use its starting double-step.
+
+
+
+Even better when possible:
+
+> Unavailable
+Starting double-step is only available to an unmoved pawn.
+
+
+
+This is particularly important during development and Academy mode.
+
+
+---
+
+29. Empty and Edge States
+
+The implementation should explicitly design:
+
+no legal moves
+
+no eligible Jester sacrifice
+
+no available King Swap
+
+disconnected opponent
+
+reconnecting
+
+incomplete setup
+
+completed setup
+
+game already ended
+
+expired session
+
+AI unable to continue
+
+unexpected engine state
+
+
+The UI must never simply freeze.
+
+Every engine state should have a defined UI representation or a controlled error/recovery path.
+
+
+---
+
+30. Design System
+
+The rebuild should establish reusable design primitives rather than styling each screen independently.
+
+Define reusable components for:
+
+buttons
+
+icon buttons
+
+sheets
+
+cards
+
+status indicators
+
+player headers
+
+piece cards
+
+rule cards
+
+move history entries
+
+dialogs
+
+game-state banners
+
+tutorial overlays
+
+special-action controls
+
+navigation
+
+typography
+
+spacing
+
+animation timing
+
+board states
+
+
+This prevents the V3 interface from becoming another collection of unrelated screens.
+
+
+---
+
+31. Icons
+
+Use a consistent icon system.
+
+Preferred:
+
+Lucide
+
+another professional vector icon library
+
+
+Avoid using emojis as primary interface icons.
+
+Icons should communicate actions consistently throughout the application.
+
+
+---
+
+32. What the Design Agent Must NOT Do
+
+The implementation agent must not:
+
+blindly reproduce the existing Hess UI
+
+blindly reproduce Chess.com
+
+blindly reproduce iOS
+
+turn Hess into a generic SaaS dashboard
+
+fill every surface with cards
+
+use decorative UI instead of functional feedback
+
+hide important game state behind unnecessary menus
+
+explain every rule permanently
+
+rely entirely on color
+
+use animation to compensate for unclear UX
+
+sacrifice board readability for aesthetics
+
+introduce visual complexity simply because Hess has complex rules
+
+
+
+---
+
+33. Design Exploration Is Expected
+
+The first implementation does not need to be the final visual design.
+
+The agent should be allowed to explore alternatives for:
+
+board presentation
+
+game controls
+
+special-action UI
+
+setup
+
+Academy
+
+Rulebook
+
+navigation
+
+AI status
+
+mobile layout
+
+
+However, exploration must remain grounded in the established product principles.
+
+
+---
+
+34. Prototype the Most Difficult Screen First
+
+The most important design prototype is not the home screen.
+
+It is the actual Hess gameplay screen.
+
+The agent should test the design against:
+
+1. normal movement
+
+
+2. capture
+
+
+3. King Swap
+
+
+4. Jester interaction
+
+
+5. Queen Raid
+
+
+6. hidden setup
+
+
+7. promotion
+
+
+8. unusual endgame state
+
+
+9. AI thinking
+
+
+10. mobile touch interaction
+
+
+
+If the interface handles those elegantly, simpler screens will be much easier.
+
+
+---
+
+35. Design Validation Questions
+
+During implementation, repeatedly ask:
+
+Clarity
+
+> Can a new player understand what is happening without reading a manual?
+Discoverability
+Can a player discover Hess's unusual mechanics naturally?
+Control
+Does the player always know what actions are currently available?
+Feedback
+Does every meaningful action produce understandable feedback?
+Density
+Is the interface showing too much information?
+Identity
+Does this feel like Hess rather than generic chess?
+Mobile usability
+Can this comfortably be used with one hand on a phone?
+Complexity
+Is the UI handling Hess's complexity, or merely exposing that complexity to the player?
+That last question is especially important.
+36. Design Philosophy in One Sentence
+The target experience is:
+The familiarity of a polished chess interface, the clarity of a well-designed mobile app, and the personality of an original strategy game.
+37. Final Directive to the Implementation Agent
+Do not treat this document as a request to decorate the existing Hess application.
+Treat it as permission to rethink the entire presentation layer.
+The existing Hess UI should be inspected for useful behavior and discarded where appropriate.
+Chess platforms such as Chess.com should be studied for excellent game interaction.
+iOS should be studied for hierarchy, navigation, touch interaction, contextual controls, sheets, animation, and information architecture.
+Modern board games and mobile games should be studied for onboarding, feedback, special mechanics, and interaction design.
+But the final product must be Hess.
+The objective is not imitation.
+The objective is to take proven interaction ideas and combine them into a coherent interface designed specifically for Hess's rules, mechanics, and players.
+Gameplay clarity comes before visual novelty.
+Discoverability comes before documentation.
+Usability comes before decoration.
+Hess's identity comes from how its unique systems are experienced, not from copying another product's appearance.
+V3 Design Success Condition
+The redesign succeeds when a player can look at Hess and think:
+“I understand how to use this.”
+Then, after encountering the unusual mechanics:
+“Oh… this game is much deeper than I thought.”
+—not:
+“Where am I supposed to click?”
+and not:
+“Why does this look like a copy of Chess.com?”
+This document should be included with the other Hess V3 documents when the rebuild agent receives the project specification.
